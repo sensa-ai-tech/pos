@@ -14,6 +14,7 @@ interface FeatureStatus {
 export function useFeatureCheck(tenantId: string) {
   const [features, setFeatures] = useState<FeatureStatus[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!tenantId) return;
@@ -26,12 +27,16 @@ export function useFeatureCheck(tenantId: string) {
         setFeatures(data);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((error) => {
+        console.error('Failed to load features:', error);
+        setError('無法載入功能設定');
+        setLoading(false);
+      });
   }, [tenantId]);
 
   const hasFeature = (featureId: string): boolean => {
     return features.some((f) => f.featureId === featureId && f.isActive);
   };
 
-  return { features, loading, hasFeature };
+  return { features, loading, error, hasFeature };
 }

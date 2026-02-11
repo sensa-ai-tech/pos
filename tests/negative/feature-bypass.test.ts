@@ -254,7 +254,7 @@ describe('Feature Gate Bypass Attacks', () => {
     // activate/route.ts: if (!tenantId) return 401
     const tenantId: string | null = null;
     expect(tenantId).toBeNull();
-    // Route would return: { error: 'Tenant ID required' }, { status: 401 }
+    // Route would return: { error: 'Unauthorized: tenant identification required' }, { status: 401 }
   });
 
   /**

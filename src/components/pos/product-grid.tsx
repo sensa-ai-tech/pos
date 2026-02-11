@@ -1,16 +1,9 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useCartStore } from '@/stores/cart-store';
-
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  isActive: boolean;
-  stockQuantity: number;
-  categoryId: string | null;
-}
+import type { Product } from '@/types';
 
 interface ProductGridProps {
   products: Product[];
@@ -21,12 +14,15 @@ interface ProductGridProps {
 export function ProductGrid({ products, selectedCategory, searchQuery }: ProductGridProps) {
   const addItem = useCartStore((s) => s.addItem);
 
-  const filtered = products.filter((p) => {
-    if (!p.isActive) return false;
-    if (selectedCategory && p.categoryId !== selectedCategory) return false;
-    if (searchQuery && !p.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    return true;
-  });
+  const filtered = useMemo(() =>
+    products.filter((p) => {
+      if (!p.isActive) return false;
+      if (selectedCategory && p.categoryId !== selectedCategory) return false;
+      if (searchQuery && !p.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      return true;
+    }),
+    [products, selectedCategory, searchQuery]
+  );
 
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">

@@ -4,16 +4,7 @@ import { useEffect, useState } from 'react';
 import { FeatureGate } from '@/components/feature-gate';
 import { FEATURES } from '@/lib/feature-ids';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
-function getTenantId(): string {
-  if (typeof document === 'undefined') return '';
-  const cookies = document.cookie.split(';').reduce((acc, c) => {
-    const [key, val] = c.trim().split('=');
-    acc[key] = val;
-    return acc;
-  }, {} as Record<string, string>);
-  return cookies['tenant_id'] || '';
-}
+import { getClientTenantId } from '@/hooks/use-tenant';
 
 function AnalyticsContent() {
   // Simulated chart data using CSS divs
@@ -137,7 +128,7 @@ export default function AnalyticsPage() {
   const [tenantId, setTenantId] = useState('');
 
   useEffect(() => {
-    setTenantId(getTenantId());
+    setTenantId(getClientTenantId());
   }, []);
 
   if (!tenantId) return null;

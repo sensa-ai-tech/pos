@@ -1,0 +1,33 @@
+export const educationTemplate = {
+  categories: [
+    { name: '常規課程', sortOrder: 1 },
+    { name: '假期營隊', sortOrder: 2 },
+    { name: '一對一家教', sortOrder: 3 },
+    { name: '教材', sortOrder: 4 },
+    { name: '考試報名', sortOrder: 5 },
+  ],
+  products: [
+    { name: '國中數學班(月費)', price: 4500, category: '常規課程', stockQuantity: 30, metadata: JSON.stringify({ grade: '國中', subject: '數學', sessions_per_month: 8, duration_minutes: 90 }) },
+    { name: '國中英文班(月費)', price: 4500, category: '常規課程', stockQuantity: 30, metadata: JSON.stringify({ grade: '國中', subject: '英文', sessions_per_month: 8, duration_minutes: 90 }) },
+    { name: '高中數學班(月費)', price: 5500, category: '常規課程', stockQuantity: 25, metadata: JSON.stringify({ grade: '高中', subject: '數學', sessions_per_month: 8, duration_minutes: 120 }) },
+    { name: '高中英文班(月費)', price: 5500, category: '常規課程', stockQuantity: 25, metadata: JSON.stringify({ grade: '高中', subject: '英文', sessions_per_month: 8, duration_minutes: 120 }) },
+    { name: '兒童程式設計班(月費)', price: 3800, category: '常規課程', stockQuantity: 20, metadata: JSON.stringify({ grade: '國小', subject: '程式設計', sessions_per_month: 4, duration_minutes: 90 }) },
+    { name: '暑假科學營(5天)', price: 8000, category: '假期營隊', stockQuantity: 30, metadata: JSON.stringify({ duration_days: 5, age_range: '8-12' }) },
+    { name: '寒假英語營(3天)', price: 5000, category: '假期營隊', stockQuantity: 30, metadata: JSON.stringify({ duration_days: 3, age_range: '10-15' }) },
+    { name: '一對一數學', price: 800, category: '一對一家教', stockQuantity: 999, metadata: JSON.stringify({ duration_minutes: 60, subject: '數學' }) },
+    { name: '一對一英文', price: 900, category: '一對一家教', stockQuantity: 999, metadata: JSON.stringify({ duration_minutes: 60, subject: '英文' }) },
+    { name: '一對一物理', price: 850, category: '一對一家教', stockQuantity: 999, metadata: JSON.stringify({ duration_minutes: 60, subject: '物理' }) },
+    { name: '數學講義(國中)', price: 350, category: '教材', stockQuantity: 100, sku: 'TXT-MATH-JH' },
+    { name: '英文講義(高中)', price: 400, category: '教材', stockQuantity: 80, sku: 'TXT-ENG-SH' },
+    { name: '模擬考卷套組', price: 500, category: '教材', stockQuantity: 60, sku: 'EXAM-SET' },
+    { name: '全民英檢報名費', price: 1600, category: '考試報名', stockQuantity: 999 },
+    { name: '多益模擬考', price: 500, category: '考試報名', stockQuantity: 999 },
+  ],
+  settings: {
+    enableSchedule: true,
+    enableAttendance: true,
+    enableParentNotification: true,
+    taxRate: 0,
+    currency: 'TWD',
+  },
+};

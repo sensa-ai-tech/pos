@@ -6,35 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-
-function getTenantId(): string {
-  if (typeof document === 'undefined') return '';
-  const cookies = document.cookie.split(';').reduce((acc, c) => {
-    const [key, val] = c.trim().split('=');
-    acc[key] = val;
-    return acc;
-  }, {} as Record<string, string>);
-  return cookies['tenant_id'] || '';
-}
-
-function getTenantName(): string {
-  if (typeof document === 'undefined') return '';
-  const cookies = document.cookie.split(';').reduce((acc, c) => {
-    const [key, ...rest] = c.trim().split('=');
-    acc[key] = rest.join('=');
-    return acc;
-  }, {} as Record<string, string>);
-  if (!cookies['tenant_name']) return '';
-  let decoded = cookies['tenant_name'];
-  try {
-    while (decoded !== decodeURIComponent(decoded)) {
-      decoded = decodeURIComponent(decoded);
-    }
-  } catch {
-    // already fully decoded
-  }
-  return decoded;
-}
+import { getClientTenantId, getClientTenantName } from '@/hooks/use-tenant';
 
 export default function SettingsPage() {
   const [storeName, setStoreName] = useState('');
@@ -44,9 +16,9 @@ export default function SettingsPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const tid = getTenantId();
+    const tid = getClientTenantId();
     setTenantId(tid);
-    setStoreName(getTenantName());
+    setStoreName(getClientTenantName());
   }, []);
 
   const handleSave = () => {

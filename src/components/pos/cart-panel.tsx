@@ -5,6 +5,8 @@ import { useCartStore } from '@/stores/cart-store';
 import { Button } from '@/components/ui/button';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 
+const DEFAULT_TAX_RATE = 0.05;
+
 interface CartPanelProps {
   tenantId: string;
   taxRate?: number;
@@ -13,7 +15,7 @@ interface CartPanelProps {
 // Module-level lock to prevent duplicate checkout in StrictMode
 let _checkoutLock = false;
 
-export function CartPanel({ tenantId, taxRate = 0.05 }: CartPanelProps) {
+export function CartPanel({ tenantId, taxRate = DEFAULT_TAX_RATE }: CartPanelProps) {
   const { items, updateQuantity, removeItem, clearCart, getSubtotal, getTax, getTotal } =
     useCartStore();
   const [paymentMethod, setPaymentMethod] = useState<string>('cash');

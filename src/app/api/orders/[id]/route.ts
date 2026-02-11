@@ -10,7 +10,7 @@ export async function GET(
 ) {
   const tenantId = getTenantId(request);
   if (!tenantId) {
-    return NextResponse.json({ error: 'Missing x-tenant-id header' }, { status: 400 });
+    return NextResponse.json({ error: 'Unauthorized: tenant identification required' }, { status: 401 });
   }
 
   const order = db.select().from(orders)

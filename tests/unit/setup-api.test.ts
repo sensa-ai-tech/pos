@@ -109,7 +109,7 @@ describe('Setup API Logic', () => {
       db.insert(schema.tenants).values({
         id: tenantId,
         name: `Test ${industry}`,
-        industry: industry as 'restaurant' | 'retail' | 'medical' | 'service',
+        industry: industry as 'restaurant' | 'retail' | 'medical' | 'service' | 'cafe' | 'gym' | 'education' | 'petshop' | 'repair' | 'beauty',
         plan: 'free',
         settings: JSON.stringify(templateData.settings),
         createdAt: now,

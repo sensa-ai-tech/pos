@@ -6,31 +6,8 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ShoppingCart, Package, BarChart3, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-
-interface DashboardData {
-  today: { orderCount: number; revenue: number; avgOrderValue: number };
-  weekly: { orderCount: number; revenue: number };
-  productCount: number;
-  topProducts: Array<{ productName: string; totalQty: number; totalRevenue: number }>;
-  recentOrders: Array<{
-    id: string;
-    orderNumber: string;
-    total: number;
-    status: string;
-    paymentMethod: string;
-    createdAt: string;
-  }>;
-}
-
-function getTenantId(): string {
-  if (typeof document === 'undefined') return '';
-  const cookies = document.cookie.split(';').reduce((acc, c) => {
-    const [key, val] = c.trim().split('=');
-    acc[key] = val;
-    return acc;
-  }, {} as Record<string, string>);
-  return cookies['tenant_id'] || '';
-}
+import type { DashboardData } from '@/types';
+import { getClientTenantId } from '@/hooks/use-tenant';
 
 const statusLabels: Record<string, string> = {
   pending: '待處理',
@@ -41,9 +18,10 @@ const statusLabels: Record<string, string> = {
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchDashboard = useCallback(async () => {
-    const tid = getTenantId();
+    const tid = getClientTenantId();
     if (!tid) return;
     try {
       const res = await fetch('/api/reports/dashboard', {
@@ -52,8 +30,9 @@ export default function DashboardPage() {
       if (res.ok) {
         setData(await res.json());
       }
-    } catch {
-      // ignore
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error);
+      setError('無法載入儀表板資料');
     }
   }, []);
 
@@ -66,6 +45,12 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Dashboard</h1>
+
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+          {error}
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>

@@ -5,25 +5,8 @@ import { FeatureGate } from '@/components/feature-gate';
 import { FEATURES } from '@/lib/feature-ids';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-
-interface Customer {
-  id: string;
-  name: string;
-  phone: string | null;
-  email: string | null;
-  totalSpent: number;
-  visitCount: number;
-}
-
-function getTenantId(): string {
-  if (typeof document === 'undefined') return '';
-  const cookies = document.cookie.split(';').reduce((acc, c) => {
-    const [key, val] = c.trim().split('=');
-    acc[key] = val;
-    return acc;
-  }, {} as Record<string, string>);
-  return cookies['tenant_id'] || '';
-}
+import type { Customer } from '@/types';
+import { getClientTenantId } from '@/hooks/use-tenant';
 
 function CustomersContent({ tenantId: _tenantId }: { tenantId: string }) {
   const customers: Customer[] = [
@@ -72,7 +55,7 @@ export default function CustomersPage() {
   const [tenantId, setTenantId] = useState('');
 
   useEffect(() => {
-    setTenantId(getTenantId());
+    setTenantId(getClientTenantId());
   }, []);
 
   if (!tenantId) return null;

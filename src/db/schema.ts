@@ -1,10 +1,10 @@
-import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 // ============ Tenants ============
 export const tenants = sqliteTable('tenants', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
-  industry: text('industry', { enum: ['restaurant', 'retail', 'medical', 'service'] }).notNull(),
+  industry: text('industry', { enum: ['restaurant', 'retail', 'medical', 'service', 'cafe', 'gym', 'education', 'petshop', 'repair', 'beauty'] }).notNull(),
   plan: text('plan', { enum: ['free', 'basic', 'pro', 'enterprise'] }).notNull().default('free'),
   settings: text('settings'), // JSON string for industry-specific settings
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
@@ -27,7 +27,9 @@ export const categories = sqliteTable('categories', {
   tenantId: text('tenant_id').notNull().references(() => tenants.id),
   name: text('name').notNull(),
   sortOrder: integer('sort_order').notNull().default(0),
-});
+}, (table) => [
+  index('idx_categories_tenant_id').on(table.tenantId),
+]);
 
 // ============ Products ============
 export const products = sqliteTable('products', {
@@ -46,7 +48,10 @@ export const products = sqliteTable('products', {
   lowStockThreshold: integer('low_stock_threshold').notNull().default(5),
   metadata: text('metadata'), // JSON string for industry-specific fields
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
-});
+}, (table) => [
+  index('idx_products_tenant_id').on(table.tenantId),
+  index('idx_products_category_id').on(table.categoryId),
+]);
 
 // ============ Orders ============
 export const orders = sqliteTable('orders', {
@@ -63,7 +68,9 @@ export const orders = sqliteTable('orders', {
   notes: text('notes'),
   metadata: text('metadata'), // JSON for industry-specific: table_number, dine_in, etc.
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
-});
+}, (table) => [
+  index('idx_orders_tenant_id').on(table.tenantId),
+]);
 
 // ============ Order Items ============
 export const orderItems = sqliteTable('order_items', {
@@ -75,7 +82,9 @@ export const orderItems = sqliteTable('order_items', {
   unitPrice: real('unit_price').notNull(),
   subtotal: real('subtotal').notNull(),
   notes: text('notes'),
-});
+}, (table) => [
+  index('idx_order_items_order_id').on(table.orderId),
+]);
 
 // ============ Payments ============
 export const payments = sqliteTable('payments', {
@@ -86,7 +95,10 @@ export const payments = sqliteTable('payments', {
   method: text('method').notNull(),
   status: text('status', { enum: ['completed', 'pending', 'failed'] }).notNull().default('completed'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
-});
+}, (table) => [
+  index('idx_payments_tenant_id').on(table.tenantId),
+  index('idx_payments_order_id').on(table.orderId),
+]);
 
 // ============ Customers ============
 export const customers = sqliteTable('customers', {
@@ -99,7 +111,9 @@ export const customers = sqliteTable('customers', {
   totalSpent: real('total_spent').notNull().default(0),
   visitCount: integer('visit_count').notNull().default(0),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
-});
+}, (table) => [
+  index('idx_customers_tenant_id').on(table.tenantId),
+]);
 
 // ============ Feature Catalog ============
 export const featureCatalog = sqliteTable('feature_catalog', {
@@ -119,12 +133,15 @@ export const tenantFeatures = sqliteTable('tenant_features', {
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
   activatedAt: integer('activated_at', { mode: 'timestamp' }).notNull(),
   expiresAt: integer('expires_at', { mode: 'timestamp' }),
-});
+}, (table) => [
+  index('idx_tenant_features_tenant_id').on(table.tenantId),
+  uniqueIndex('idx_tenant_features_tenant_feature').on(table.tenantId, table.featureId),
+]);
 
 // ============ Industry Templates ============
 export const industryTemplates = sqliteTable('industry_templates', {
   id: text('id').primaryKey(),
-  industry: text('industry', { enum: ['restaurant', 'retail', 'medical', 'service'] }).notNull(),
+  industry: text('industry', { enum: ['restaurant', 'retail', 'medical', 'service', 'cafe', 'gym', 'education', 'petshop', 'repair', 'beauty'] }).notNull(),
   templateData: text('template_data').notNull(), // JSON string
   description: text('description').notNull(),
 });
@@ -139,4 +156,7 @@ export const inventory = sqliteTable('inventory', {
   expiresAt: integer('expires_at', { mode: 'timestamp' }),
   location: text('location'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
-});
+}, (table) => [
+  index('idx_inventory_tenant_id').on(table.tenantId),
+  index('idx_inventory_product_id').on(table.productId),
+]);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createHash, randomBytes } from 'crypto';
+import bcrypt from 'bcryptjs';
 import { db, sqlite } from '@/db';
 import { tenants, users, categories, products, featureCatalog, tenantFeatures } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -8,18 +8,25 @@ import { restaurantTemplate } from '@/db/templates/restaurant';
 import { retailTemplate } from '@/db/templates/retail';
 import { medicalTemplate } from '@/db/templates/medical';
 import { serviceTemplate } from '@/db/templates/service';
+import { cafeTemplate } from '@/db/templates/cafe';
+import { gymTemplate } from '@/db/templates/gym';
+import { educationTemplate } from '@/db/templates/education';
+import { petshopTemplate } from '@/db/templates/petshop';
+import { repairTemplate } from '@/db/templates/repair';
+import { beautyTemplate } from '@/db/templates/beauty';
+
+const COOKIE_MAX_AGE = 86400 * 30; // 30 days
 
 function hashPassword(password: string): string {
-  const salt = randomBytes(16).toString('hex');
-  const hash = createHash('sha256').update(salt + password).digest('hex');
-  return `sha256:${salt}:${hash}`;
+  const salt = bcrypt.genSaltSync(10);
+  return bcrypt.hashSync(password, salt);
 }
 
 const setupSchema = z.object({
   name: z.string().trim().min(1).max(100),
   email: z.string().email(),
   password: z.string().min(6).max(128),
-  industry: z.enum(['restaurant', 'retail', 'medical', 'service']),
+  industry: z.enum(['restaurant', 'retail', 'medical', 'service', 'cafe', 'gym', 'education', 'petshop', 'repair', 'beauty']),
 });
 
 const templates = {
@@ -27,6 +34,12 @@ const templates = {
   retail: retailTemplate,
   medical: medicalTemplate,
   service: serviceTemplate,
+  cafe: cafeTemplate,
+  gym: gymTemplate,
+  education: educationTemplate,
+  petshop: petshopTemplate,
+  repair: repairTemplate,
+  beauty: beautyTemplate,
 } as const;
 
 export async function POST(request: NextRequest) {
@@ -128,9 +141,26 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
 
     // Set cookies for auth
-    response.cookies.set('tenant_id', tenantId, { path: '/', maxAge: 86400 * 30 });
-    response.cookies.set('user_id', userId, { path: '/', maxAge: 86400 * 30 });
-    response.cookies.set('tenant_name', name, { path: '/', maxAge: 86400 * 30 });
+    response.cookies.set('tenant_id', tenantId, {
+      path: '/',
+      maxAge: COOKIE_MAX_AGE,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
+    response.cookies.set('user_id', userId, {
+      path: '/',
+      maxAge: COOKIE_MAX_AGE,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
+    response.cookies.set('tenant_name', encodeURIComponent(name), {
+      path: '/',
+      maxAge: COOKIE_MAX_AGE,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
 
     return response;
   } catch (error) {

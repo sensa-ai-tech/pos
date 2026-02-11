@@ -7,13 +7,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 
-type Industry = 'restaurant' | 'retail' | 'medical' | 'service';
+type Industry = 'restaurant' | 'retail' | 'medical' | 'service' | 'cafe' | 'gym' | 'education' | 'petshop' | 'repair' | 'beauty';
 
 const industryOptions = [
-  { value: 'restaurant' as Industry, icon: '🍽️', label: '餐飲業', desc: '餐廳、咖啡廳、飲料店' },
+  { value: 'restaurant' as Industry, icon: '🍽️', label: '餐飲業', desc: '餐廳、小吃店、快餐' },
+  { value: 'cafe' as Industry, icon: '☕', label: '咖啡/飲料', desc: '咖啡廳、飲料店、茶館' },
   { value: 'retail' as Industry, icon: '🛍️', label: '零售業', desc: '服飾、超商、雜貨店' },
   { value: 'medical' as Industry, icon: '🏥', label: '醫療業', desc: '診所、藥局、獸醫' },
-  { value: 'service' as Industry, icon: '💇', label: '服務業', desc: '美容美髮、SPA、寵物美容' },
+  { value: 'service' as Industry, icon: '💇', label: '美髮業', desc: '美容美髮沙龍' },
+  { value: 'beauty' as Industry, icon: '💅', label: '美容SPA', desc: '美甲、美睫、SPA' },
+  { value: 'gym' as Industry, icon: '🏋️', label: '健身中心', desc: '健身房、運動中心、瑜伽' },
+  { value: 'education' as Industry, icon: '📚', label: '教育培訓', desc: '補習班、才藝班、家教' },
+  { value: 'petshop' as Industry, icon: '🐾', label: '寵物服務', desc: '寵物店、寵物美容' },
+  { value: 'repair' as Industry, icon: '🔧', label: '維修服務', desc: '手機維修、電腦維修' },
 ];
 
 export default function OnboardingPage() {
@@ -124,11 +130,11 @@ export default function OnboardingPage() {
           <Card>
             <CardContent className="space-y-4 pt-6">
               <h2 className="text-xl font-semibold">選擇產業</h2>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {industryOptions.map((opt) => (
                   <button
                     key={opt.value}
-                    className={`rounded-lg border-2 p-4 text-left transition-colors ${
+                    className={`rounded-lg border-2 p-3 text-left transition-colors ${
                       industry === opt.value
                         ? 'border-neutral-900 bg-neutral-50'
                         : 'border-neutral-200 hover:border-neutral-400'

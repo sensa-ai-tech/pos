@@ -6,43 +6,28 @@ import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, Package, TrendingDown } from 'lucide-react';
 import { FeatureGate } from '@/components/feature-gate';
 import { FEATURES } from '@/lib/feature-ids';
-
-interface Product {
-  id: string;
-  name: string;
-  sku: string | null;
-  stockQuantity: number;
-  lowStockThreshold: number;
-  isActive: boolean;
-  price: number;
-}
-
-function getTenantId(): string {
-  if (typeof document === 'undefined') return '';
-  const cookies = document.cookie.split(';').reduce((acc, c) => {
-    const [key, val] = c.trim().split('=');
-    acc[key] = val;
-    return acc;
-  }, {} as Record<string, string>);
-  return cookies['tenant_id'] || '';
-}
+import type { Product } from '@/types';
+import { getClientTenantId } from '@/hooks/use-tenant';
 
 function InventoryContent() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchProducts = useCallback(async () => {
-    const tid = getTenantId();
+    const tid = getClientTenantId();
     if (!tid) return;
     try {
       const res = await fetch('/api/products', {
         headers: { 'x-tenant-id': tid },
       });
       if (res.ok) {
-        setProducts(await res.json());
+        const result = await res.json();
+        setProducts(result.data ?? result);
       }
-    } catch {
-      // ignore
+    } catch (error) {
+      console.error('Failed to fetch inventory data:', error);
+      setError('無法載入庫存資料');
     } finally {
       setLoading(false);
     }
@@ -53,7 +38,7 @@ function InventoryContent() {
   }, [fetchProducts]);
 
   const lowStockItems = products.filter(
-    (p) => p.isActive && p.stockQuantity <= p.lowStockThreshold
+    (p) => p.isActive && p.stockQuantity <= (p.lowStockThreshold ?? 0)
   );
   const outOfStockItems = products.filter(
     (p) => p.isActive && p.stockQuantity === 0
@@ -70,6 +55,12 @@ function InventoryContent() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">庫存管理</h1>
+
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+          {error}
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
@@ -136,7 +127,7 @@ function InventoryContent() {
               <tbody>
                 {products.map((p) => {
                   const isLow =
-                    p.isActive && p.stockQuantity <= p.lowStockThreshold;
+                    p.isActive && p.stockQuantity <= (p.lowStockThreshold ?? 0);
                   const isOut = p.isActive && p.stockQuantity === 0;
                   return (
                     <tr key={p.id} className="border-b last:border-0">
@@ -156,7 +147,7 @@ function InventoryContent() {
                         {p.stockQuantity}
                       </td>
                       <td className="py-2 text-right text-neutral-500">
-                        {p.lowStockThreshold}
+                        {p.lowStockThreshold ?? 0}
                       </td>
                       <td className="py-2 text-center">
                         {isOut ? (
@@ -195,7 +186,7 @@ export default function InventoryPage() {
   const [tenantId, setTenantId] = useState('');
 
   useEffect(() => {
-    setTenantId(getTenantId());
+    setTenantId(getClientTenantId());
   }, []);
 
   if (!tenantId) return null;

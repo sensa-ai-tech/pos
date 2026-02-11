@@ -40,16 +40,28 @@ describe('Industry Switch Components', () => {
     expect(typeof technicianSelect.TechnicianSelect).toBe('function');
   });
 
-  it('should have 4 industry template data files', async () => {
+  it('should have 10 industry template data files', async () => {
     const restaurant = await import('../../src/db/templates/restaurant');
     const retail = await import('../../src/db/templates/retail');
     const medical = await import('../../src/db/templates/medical');
     const service = await import('../../src/db/templates/service');
+    const cafe = await import('../../src/db/templates/cafe');
+    const gym = await import('../../src/db/templates/gym');
+    const education = await import('../../src/db/templates/education');
+    const petshop = await import('../../src/db/templates/petshop');
+    const repair = await import('../../src/db/templates/repair');
+    const beauty = await import('../../src/db/templates/beauty');
 
     expect(restaurant.restaurantTemplate).toBeDefined();
     expect(retail.retailTemplate).toBeDefined();
     expect(medical.medicalTemplate).toBeDefined();
     expect(service.serviceTemplate).toBeDefined();
+    expect(cafe.cafeTemplate).toBeDefined();
+    expect(gym.gymTemplate).toBeDefined();
+    expect(education.educationTemplate).toBeDefined();
+    expect(petshop.petshopTemplate).toBeDefined();
+    expect(repair.repairTemplate).toBeDefined();
+    expect(beauty.beautyTemplate).toBeDefined();
   });
 
   it('should map industry to correct template', () => {
@@ -58,13 +70,19 @@ describe('Industry Switch Components', () => {
       retail: 'retailTemplate',
       medical: 'medicalTemplate',
       service: 'serviceTemplate',
+      cafe: 'cafeTemplate',
+      gym: 'gymTemplate',
+      education: 'educationTemplate',
+      petshop: 'petshopTemplate',
+      repair: 'repairTemplate',
+      beauty: 'beautyTemplate',
     };
 
-    const industries = ['restaurant', 'retail', 'medical', 'service'];
+    const industries = ['restaurant', 'retail', 'medical', 'service', 'cafe', 'gym', 'education', 'petshop', 'repair', 'beauty'];
     for (const ind of industries) {
       expect(industryMap[ind]).toBeDefined();
     }
-    expect(Object.keys(industryMap)).toHaveLength(4);
+    expect(Object.keys(industryMap)).toHaveLength(10);
   });
 
   it('should have discount badge render nothing for zero discount', async () => {

@@ -16,7 +16,7 @@ const setupSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
   password: z.string().min(6),
-  industry: z.enum(['restaurant', 'retail', 'medical', 'service']),
+  industry: z.enum(['restaurant', 'retail', 'medical', 'service', 'cafe', 'gym', 'education', 'petshop', 'repair', 'beauty']),
 });
 
 let ctx: TestDbContext;

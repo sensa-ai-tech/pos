@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -11,38 +11,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-
-interface OrderItem {
-  id: string;
-  productName: string;
-  quantity: number;
-  unitPrice: number;
-  subtotal: number;
-}
-
-interface Order {
-  id: string;
-  orderNumber: string;
-  status: string;
-  subtotal: number;
-  tax: number;
-  total: number;
-  paymentMethod: string;
-  createdAt: string | number;
-  items?: OrderItem[];
-}
-
-function getTenantId(): string {
-  const cookies = document.cookie.split(';').reduce((acc, c) => {
-    const [key, val] = c.trim().split('=');
-    acc[key] = val;
-    return acc;
-  }, {} as Record<string, string>);
-  return cookies['tenant_id'] || 'tenant-a';
-}
+import type { Order } from '@/types';
+import { getClientTenantId } from '@/hooks/use-tenant';
 
 const statusLabels: Record<string, string> = {
-  pending: '處理中',
+  pending: '待處理',
   completed: '已完成',
   cancelled: '已取消',
   refunded: '已退款',
@@ -59,13 +32,17 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const tenantId = getTenantId();
+    const tenantId = getClientTenantId('tenant-a');
     fetch('/api/orders', { headers: { 'x-tenant-id': tenantId } })
       .then((r) => r.json())
-      .then(setOrders)
-      .catch(() => {});
+      .then((result) => setOrders(result.data ?? result))
+      .catch((error) => {
+        console.error('Failed to fetch orders:', error);
+        setError('無法載入訂單資料');
+      });
   }, []);
 
   const handleExpand = async (orderId: string) => {
@@ -74,7 +51,7 @@ export default function OrdersPage() {
       return;
     }
 
-    const tenantId = getTenantId();
+    const tenantId = getClientTenantId('tenant-a');
     const order = orders.find((o) => o.id === orderId);
     if (order && !order.items) {
       const res = await fetch(`/api/orders/${orderId}`, {
@@ -121,6 +98,12 @@ export default function OrdersPage() {
         </div>
       </div>
 
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+          {error}
+        </div>
+      )}
+
       <div className="rounded-lg border bg-white">
         <Table>
           <TableHeader>
@@ -142,9 +125,8 @@ export default function OrdersPage() {
               </TableRow>
             ) : (
               filteredOrders.map((order) => (
-                <>
+                <React.Fragment key={order.id}>
                   <TableRow
-                    key={order.id}
                     className="cursor-pointer hover:bg-neutral-50"
                     onClick={() => handleExpand(order.id)}
                   >
@@ -216,7 +198,7 @@ export default function OrdersPage() {
                       </TableCell>
                     </TableRow>
                   )}
-                </>
+                </React.Fragment>
               ))
             )}
           </TableBody>

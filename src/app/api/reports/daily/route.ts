@@ -8,7 +8,7 @@ import { hasFeature } from '@/lib/feature-gate';
 export async function GET(request: NextRequest) {
   const tenantId = getTenantId(request);
   if (!tenantId) {
-    return NextResponse.json({ error: 'Missing x-tenant-id header' }, { status: 400 });
+    return NextResponse.json({ error: 'Unauthorized: tenant identification required' }, { status: 401 });
   }
 
   const tenant = validateTenant(tenantId);

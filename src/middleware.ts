@@ -11,11 +11,6 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Allow API routes (they handle their own auth via x-tenant-id header)
-  if (pathname.startsWith('/api/')) {
-    return NextResponse.next();
-  }
-
   // Allow static assets and Next.js internals
   if (pathname.startsWith('/_next/') || pathname.startsWith('/favicon.ico')) {
     return NextResponse.next();
@@ -24,7 +19,23 @@ export function middleware(request: NextRequest) {
   // Check for tenant_id cookie
   const tenantId = request.cookies.get('tenant_id')?.value;
   if (!tenantId) {
+    // For API routes, return 401
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    // For pages, redirect to onboarding
     return NextResponse.redirect(new URL('/onboarding', request.url));
+  }
+
+  // For API routes, inject tenant_id from cookie into request headers
+  if (pathname.startsWith('/api/')) {
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-tenant-id', tenantId);
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
   }
 
   return NextResponse.next();

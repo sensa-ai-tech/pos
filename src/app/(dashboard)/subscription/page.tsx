@@ -6,26 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Check } from 'lucide-react';
-
-interface FeatureInfo {
-  featureId: string;
-  featureName: string;
-  featureDescription: string;
-  category: string;
-  priceMonthly: number;
-  isFree: boolean;
-  isActive: boolean;
-}
-
-function getTenantId(): string {
-  if (typeof document === 'undefined') return '';
-  const cookies = document.cookie.split(';').reduce((acc, c) => {
-    const [key, val] = c.trim().split('=');
-    acc[key] = val;
-    return acc;
-  }, {} as Record<string, string>);
-  return cookies['tenant_id'] || '';
-}
+import type { FeatureInfo } from '@/types';
+import { getClientTenantId } from '@/hooks/use-tenant';
 
 const plans = [
   {
@@ -54,16 +36,20 @@ export default function SubscriptionPage() {
   const [tenantId, setTenantId] = useState('');
   const [features, setFeatures] = useState<FeatureInfo[]>([]);
   const [loading, setLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    const tid = getTenantId();
+    const tid = getClientTenantId();
     setTenantId(tid);
     if (tid) {
       fetch('/api/features', { headers: { 'x-tenant-id': tid } })
         .then((r) => r.json())
         .then(setFeatures)
-        .catch(() => {});
+        .catch((error) => {
+          console.error('Failed to fetch subscription features:', error);
+          setError('無法載入訂閱資料');
+        });
     }
   }, []);
 
@@ -85,7 +71,8 @@ export default function SubscriptionPage() {
         );
         toast({ title: '功能已啟用', description: '模組已成功解鎖' });
       }
-    } catch {
+    } catch (error) {
+      console.error('Failed to activate feature:', error);
       toast({ title: '啟用失敗', variant: 'destructive' });
     } finally {
       setLoading(null);
@@ -110,7 +97,8 @@ export default function SubscriptionPage() {
         );
         toast({ title: '功能已停用' });
       }
-    } catch {
+    } catch (error) {
+      console.error('Failed to deactivate feature:', error);
       toast({ title: '停用失敗', variant: 'destructive' });
     } finally {
       setLoading(null);
@@ -123,6 +111,12 @@ export default function SubscriptionPage() {
         <h1 className="text-2xl font-bold">訂閱管理</h1>
         <p className="text-sm text-neutral-500">選擇適合您的方案，或單獨購買模組</p>
       </div>
+
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+          {error}
+        </div>
+      )}
 
       {/* Plans */}
       <div className="grid gap-4 md:grid-cols-3">

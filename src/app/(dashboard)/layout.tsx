@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/layout/sidebar';
 import { TopBar } from '@/components/layout/top-bar';
 import { Toaster } from '@/components/ui/toaster';
+import { getClientTenantName } from '@/hooks/use-tenant';
 
 export default function DashboardLayout({
   children,
@@ -14,24 +15,9 @@ export default function DashboardLayout({
   const [tenantName, setTenantName] = useState('OneKey POS');
 
   useEffect(() => {
-    // Read tenant info from cookie
-    const cookies = document.cookie.split(';').reduce((acc, c) => {
-      const [key, ...rest] = c.trim().split('=');
-      acc[key] = rest.join('=');
-      return acc;
-    }, {} as Record<string, string>);
-
-    if (cookies['tenant_name']) {
-      // Fully decode (handles single or double encoding from older cookies)
-      let decoded = cookies['tenant_name'];
-      try {
-        while (decoded !== decodeURIComponent(decoded)) {
-          decoded = decodeURIComponent(decoded);
-        }
-      } catch {
-        // already fully decoded or invalid encoding
-      }
-      setTenantName(decoded);
+    const name = getClientTenantName();
+    if (name) {
+      setTenantName(name);
     }
   }, []);
 

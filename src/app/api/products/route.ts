@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { products } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { getTenantId, validateTenant } from '@/lib/tenant-context';
 
@@ -23,7 +23,7 @@ const createProductSchema = z.object({
 export async function GET(request: NextRequest) {
   const tenantId = getTenantId(request);
   if (!tenantId) {
-    return NextResponse.json({ error: 'Missing x-tenant-id header' }, { status: 400 });
+    return NextResponse.json({ error: 'Unauthorized: tenant identification required' }, { status: 401 });
   }
 
   const tenant = validateTenant(tenantId);
@@ -31,14 +31,34 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
   }
 
-  const allProducts = db.select().from(products).where(eq(products.tenantId, tenantId)).all();
-  return NextResponse.json(allProducts);
+  const { searchParams } = new URL(request.url);
+  const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
+  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '50')));
+  const offset = (page - 1) * limit;
+
+  const countResult = db.select({ count: sql<number>`count(*)` })
+    .from(products)
+    .where(eq(products.tenantId, tenantId))
+    .get();
+  const total = countResult?.count ?? 0;
+
+  const allProducts = db.select()
+    .from(products)
+    .where(eq(products.tenantId, tenantId))
+    .limit(limit)
+    .offset(offset)
+    .all();
+
+  return NextResponse.json({
+    data: allProducts,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  });
 }
 
 export async function POST(request: NextRequest) {
   const tenantId = getTenantId(request);
   if (!tenantId) {
-    return NextResponse.json({ error: 'Missing x-tenant-id header' }, { status: 400 });
+    return NextResponse.json({ error: 'Unauthorized: tenant identification required' }, { status: 401 });
   }
 
   const tenant = validateTenant(tenantId);
@@ -75,7 +95,8 @@ export async function POST(request: NextRequest) {
     db.insert(products).values(newProduct).run();
 
     return NextResponse.json(newProduct, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error('Failed to create product:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

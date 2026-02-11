@@ -14,45 +14,29 @@ import {
 import { ProductForm } from '@/components/products/product-form';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  cost: number | null;
-  sku: string | null;
-  stockQuantity: number;
-  lowStockThreshold: number;
-  isActive: boolean;
-  categoryId: string | null;
-}
-
-function getTenantId(): string {
-  if (typeof document === 'undefined') return 'tenant-a';
-  const cookies = document.cookie.split(';').reduce((acc, c) => {
-    const [key, val] = c.trim().split('=');
-    acc[key] = val;
-    return acc;
-  }, {} as Record<string, string>);
-  return cookies['tenant_id'] || 'tenant-a';
-}
+import type { Product } from '@/types';
+import { getClientTenantId } from '@/hooks/use-tenant';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [tenantId, setTenantId] = useState('tenant-a');
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchProducts = useCallback(() => {
     fetch('/api/products', { headers: { 'x-tenant-id': tenantId } })
       .then((r) => r.json())
-      .then(setProducts)
-      .catch(() => {});
+      .then((result) => setProducts(result.data ?? result))
+      .catch((error) => {
+        console.error('Failed to fetch products:', error);
+        setError('無法載入商品資料');
+      });
   }, [tenantId]);
 
   useEffect(() => {
-    setTenantId(getTenantId());
+    setTenantId(getClientTenantId('tenant-a'));
   }, []);
 
   useEffect(() => {
@@ -113,6 +97,12 @@ export default function ProductsPage() {
         </Button>
       </div>
 
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+          {error}
+        </div>
+      )}
+
       <div className="rounded-lg border bg-white">
         <Table>
           <TableHeader>
@@ -141,7 +131,7 @@ export default function ProductsPage() {
                   <TableCell className="text-right">
                     <span
                       className={
-                        product.stockQuantity <= product.lowStockThreshold
+                        product.stockQuantity <= (product.lowStockThreshold ?? 0)
                           ? 'text-red-600 font-medium'
                           : ''
                       }
@@ -181,6 +171,7 @@ export default function ProductsPage() {
       </div>
 
       <ProductForm
+        key="new"
         open={showForm}
         onClose={() => setShowForm(false)}
         onSubmit={handleCreate}
@@ -189,6 +180,7 @@ export default function ProductsPage() {
 
       {editProduct && (
         <ProductForm
+          key={editProduct.id}
           open={!!editProduct}
           onClose={() => setEditProduct(null)}
           onSubmit={handleUpdate}

@@ -1,17 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { tenants } from '@/db/schema';
+import { getTenantId, validateTenant } from '@/lib/tenant-context';
 import { z } from 'zod';
 
 const createTenantSchema = z.object({
   name: z.string().min(1),
-  industry: z.enum(['restaurant', 'retail', 'medical', 'service']),
+  industry: z.enum(['restaurant', 'retail', 'medical', 'service', 'cafe', 'gym', 'education', 'petshop', 'repair', 'beauty']),
   plan: z.enum(['free', 'basic', 'pro', 'enterprise']).optional(),
 });
 
-export async function GET() {
-  const allTenants = db.select().from(tenants).all();
-  return NextResponse.json(allTenants);
+export async function GET(request: NextRequest) {
+  const tenantId = getTenantId(request);
+  if (!tenantId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const tenant = validateTenant(tenantId);
+  if (!tenant) {
+    return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
+  }
+
+  return NextResponse.json(tenant);
 }
 
 export async function POST(request: NextRequest) {
@@ -34,7 +44,8 @@ export async function POST(request: NextRequest) {
     db.insert(tenants).values(newTenant).run();
 
     return NextResponse.json(newTenant, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error('Failed to create tenant:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

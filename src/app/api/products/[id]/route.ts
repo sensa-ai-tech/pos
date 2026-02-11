@@ -7,17 +7,17 @@ import { getTenantId } from '@/lib/tenant-context';
 
 const updateProductSchema = z.object({
   categoryId: z.string().optional().nullable(),
-  name: z.string().min(1).optional(),
-  description: z.string().optional().nullable(),
-  price: z.number().positive().optional(),
-  cost: z.number().optional().nullable(),
-  sku: z.string().optional().nullable(),
-  barcode: z.string().optional().nullable(),
-  imageUrl: z.string().optional().nullable(),
+  name: z.string().trim().min(1).max(200).optional(),
+  description: z.string().max(2000).optional().nullable(),
+  price: z.number().positive().finite().max(99999999).optional(),
+  cost: z.number().finite().optional().nullable(),
+  sku: z.string().max(100).optional().nullable(),
+  barcode: z.string().max(100).optional().nullable(),
+  imageUrl: z.string().max(500).optional().nullable(),
   isActive: z.boolean().optional(),
-  stockQuantity: z.number().int().min(0).optional(),
-  lowStockThreshold: z.number().int().min(0).optional(),
-  metadata: z.string().optional().nullable(),
+  stockQuantity: z.number().int().min(0).max(9999999).optional(),
+  lowStockThreshold: z.number().int().min(0).max(9999999).optional(),
+  metadata: z.string().max(5000).optional().nullable(),
 });
 
 export async function GET(
@@ -26,7 +26,7 @@ export async function GET(
 ) {
   const tenantId = getTenantId(request);
   if (!tenantId) {
-    return NextResponse.json({ error: 'Missing x-tenant-id header' }, { status: 400 });
+    return NextResponse.json({ error: 'Unauthorized: tenant identification required' }, { status: 401 });
   }
 
   const product = db.select().from(products)
@@ -46,7 +46,7 @@ export async function PUT(
 ) {
   const tenantId = getTenantId(request);
   if (!tenantId) {
-    return NextResponse.json({ error: 'Missing x-tenant-id header' }, { status: 400 });
+    return NextResponse.json({ error: 'Unauthorized: tenant identification required' }, { status: 401 });
   }
 
   const existing = db.select().from(products)
@@ -74,7 +74,8 @@ export async function PUT(
       .get();
 
     return NextResponse.json(updated);
-  } catch {
+  } catch (error) {
+    console.error('Failed to update product:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -85,7 +86,7 @@ export async function DELETE(
 ) {
   const tenantId = getTenantId(request);
   if (!tenantId) {
-    return NextResponse.json({ error: 'Missing x-tenant-id header' }, { status: 400 });
+    return NextResponse.json({ error: 'Unauthorized: tenant identification required' }, { status: 401 });
   }
 
   const existing = db.select().from(products)

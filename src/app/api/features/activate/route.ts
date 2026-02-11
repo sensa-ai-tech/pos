@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTenantId } from '@/lib/tenant-context';
+import { withTenant } from '@/lib/with-tenant';
 import { activateFeature } from '@/lib/feature-gate';
 import { db } from '@/db';
-import { featureCatalog } from '@/db/schema';
+import { featureCatalog, tenants } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -10,12 +10,7 @@ const activateSchema = z.object({
   featureId: z.string().min(1),
 });
 
-export async function POST(request: NextRequest) {
-  const tenantId = getTenantId(request);
-  if (!tenantId) {
-    return NextResponse.json({ error: 'Tenant ID required' }, { status: 401 });
-  }
-
+export const POST = withTenant(async (request: NextRequest, { tenantId }) => {
   try {
     const body = await request.json();
     const parsed = activateSchema.safeParse(body);
@@ -25,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     const { featureId } = parsed.data;
 
-    // Verify feature exists
+    // Verify feature exists in catalog
     const feature = db
       .select()
       .from(featureCatalog)
@@ -34,6 +29,26 @@ export async function POST(request: NextRequest) {
 
     if (!feature) {
       return NextResponse.json({ error: 'Feature not found' }, { status: 404 });
+    }
+
+    // Payment validation: free plan can only activate free features
+    if (!feature.isFree) {
+      const tenant = db
+        .select()
+        .from(tenants)
+        .where(eq(tenants.id, tenantId))
+        .get();
+
+      if (tenant?.plan === 'free') {
+        return NextResponse.json(
+          {
+            error: '此功能需要升級方案才能啟用',
+            requiredAction: 'upgrade',
+            featurePrice: feature.priceMonthly,
+          },
+          { status: 403 }
+        );
+      }
     }
 
     activateFeature(tenantId, featureId);
@@ -46,4 +61,4 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
+});

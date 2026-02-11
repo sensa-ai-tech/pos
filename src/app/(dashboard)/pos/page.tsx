@@ -1,48 +1,23 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { ProductGrid } from '@/components/pos/product-grid';
 import { CartPanel } from '@/components/pos/cart-panel';
 import { CategoryFilter } from '@/components/pos/category-filter';
 import { SearchBar } from '@/components/pos/search-bar';
+import type { Product, Category, Industry } from '@/types';
+import { getClientTenantId } from '@/hooks/use-tenant';
 
-// Industry-specific components
-import { TableSelector } from '@/components/pos/restaurant/table-selector';
-import { DineInToggle } from '@/components/pos/restaurant/dine-in-toggle';
-import { BarcodeInput } from '@/components/pos/retail/barcode-input';
-import { DiscountBadge } from '@/components/pos/retail/discount-badge';
-import { AppointmentQueue } from '@/components/pos/medical/appointment-queue';
-import { DiagnosisNote } from '@/components/pos/medical/diagnosis-note';
-import { BookingSlot } from '@/components/pos/service/booking-slot';
-import { TechnicianSelect } from '@/components/pos/service/technician-select';
-
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  isActive: boolean;
-  stockQuantity: number;
-  categoryId: string | null;
-  sku?: string | null;
-  barcode?: string | null;
-}
-
-interface Category {
-  id: string;
-  name: string;
-}
-
-type Industry = 'restaurant' | 'retail' | 'medical' | 'service' | null;
-
-function getTenantId(): string {
-  if (typeof document === 'undefined') return 'tenant-a';
-  const cookies = document.cookie.split(';').reduce((acc, c) => {
-    const [key, val] = c.trim().split('=');
-    acc[key] = val;
-    return acc;
-  }, {} as Record<string, string>);
-  return cookies['tenant_id'] || 'tenant-a';
-}
+// Industry-specific components (dynamic imports for code splitting)
+const TableSelector = dynamic(() => import('@/components/pos/restaurant/table-selector').then(m => ({ default: m.TableSelector })));
+const DineInToggle = dynamic(() => import('@/components/pos/restaurant/dine-in-toggle').then(m => ({ default: m.DineInToggle })));
+const BarcodeInput = dynamic(() => import('@/components/pos/retail/barcode-input').then(m => ({ default: m.BarcodeInput })));
+const DiscountBadge = dynamic(() => import('@/components/pos/retail/discount-badge').then(m => ({ default: m.DiscountBadge })));
+const AppointmentQueue = dynamic(() => import('@/components/pos/medical/appointment-queue').then(m => ({ default: m.AppointmentQueue })));
+const DiagnosisNote = dynamic(() => import('@/components/pos/medical/diagnosis-note').then(m => ({ default: m.DiagnosisNote })));
+const BookingSlot = dynamic(() => import('@/components/pos/service/booking-slot').then(m => ({ default: m.BookingSlot })));
+const TechnicianSelect = dynamic(() => import('@/components/pos/service/technician-select').then(m => ({ default: m.TechnicianSelect })));
 
 function RestaurantExtras() {
   const [selectedTable, setSelectedTable] = useState<number | null>(null);
@@ -100,6 +75,7 @@ export default function POSPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [tenantId, setTenantId] = useState('tenant-a');
   const [industry, setIndustry] = useState<Industry>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async (tid: string) => {
     try {
@@ -109,7 +85,8 @@ export default function POSPage() {
         fetch('/api/categories', { headers: { 'x-tenant-id': tid } }),
       ]);
 
-      const data: Product[] = await prodRes.json();
+      const prodResult = await prodRes.json();
+      const data: Product[] = prodResult.data ?? prodResult;
       setProducts(data);
 
       // Use categories API if available, fallback to product-derived
@@ -133,13 +110,14 @@ export default function POSPage() {
         const tenant = await tenantRes.json();
         setIndustry(tenant.industry ?? null);
       }
-    } catch {
-      // ignore fetch errors
+    } catch (error) {
+      console.error('Failed to fetch POS data:', error);
+      setError('無法載入商品資料');
     }
   }, []);
 
   useEffect(() => {
-    const tid = getTenantId();
+    const tid = getClientTenantId('tenant-a');
     setTenantId(tid);
     fetchData(tid);
   }, [fetchData]);
@@ -158,6 +136,11 @@ export default function POSPage() {
     <div className="flex h-[calc(100vh-7rem)] gap-4">
       {/* Left: Product Selection */}
       <div className="flex min-w-0 flex-1 flex-col gap-4 overflow-hidden">
+        {error && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+            {error}
+          </div>
+        )}
         <SearchBar value={searchQuery} onChange={setSearchQuery} />
         <CategoryFilter
           categories={categories}

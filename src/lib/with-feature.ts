@@ -1,20 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTenantId } from '@/lib/tenant-context';
 import { hasFeature } from '@/lib/feature-gate';
+import { withTenant } from '@/lib/with-tenant';
 
-type RouteHandler = (
+type FeatureHandler = (
   request: NextRequest,
-  context?: { params: Record<string, string> }
-) => Promise<NextResponse>;
+  context: { tenantId: string }
+) => Promise<NextResponse> | NextResponse;
 
-export function withFeature(featureId: string, handler: RouteHandler): RouteHandler {
-  return async (request: NextRequest, context?) => {
-    const tenantId = getTenantId(request);
-    if (!tenantId) {
-      return NextResponse.json({ error: 'Tenant ID required' }, { status: 401 });
-    }
-
-    if (!hasFeature(tenantId, featureId)) {
+export function withFeature(featureId: string, handler: FeatureHandler) {
+  return withTenant(async (request: NextRequest, context: { tenantId: string }) => {
+    if (!hasFeature(context.tenantId, featureId)) {
       return NextResponse.json(
         {
           error: 'Feature not available',
@@ -27,5 +22,5 @@ export function withFeature(featureId: string, handler: RouteHandler): RouteHand
     }
 
     return handler(request, context);
-  };
+  });
 }

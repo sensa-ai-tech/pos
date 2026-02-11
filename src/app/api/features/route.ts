@@ -5,7 +5,7 @@ import { getTenantFeatures, getAllFeatures } from '@/lib/feature-gate';
 export async function GET(request: NextRequest) {
   const tenantId = getTenantId(request);
   if (!tenantId) {
-    return NextResponse.json({ error: 'Tenant ID required' }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized: tenant identification required' }, { status: 401 });
   }
 
   const allFeatures = getAllFeatures();

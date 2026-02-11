@@ -47,7 +47,7 @@ afterAll(() => ctx.cleanup());
 
 describe('Authentication Bypass Attacks', () => {
   /**
-   * AB-01 [GUARD] Missing x-tenant-id header
+   * AB-01 [GUARD] Unauthorized: tenant identification required
    *
    * tenant-context.ts getTenantId reads x-tenant-id header.
    * All protected routes check for null and return 400/401.

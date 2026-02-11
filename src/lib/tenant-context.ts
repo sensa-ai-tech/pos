@@ -17,7 +17,7 @@ export function validateTenant(tenantId: string) {
 export function requireTenantId(request: NextRequest): string {
   const tenantId = getTenantId(request);
   if (!tenantId) {
-    throw new Error('Missing x-tenant-id header');
+    throw new Error('Unauthorized: tenant identification required');
   }
   return tenantId;
 }

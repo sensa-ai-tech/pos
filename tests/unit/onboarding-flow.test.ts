@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 
 describe('Onboarding Flow', () => {
-  it('should have 4 industry options', () => {
-    const industries = ['restaurant', 'retail', 'medical', 'service'];
-    expect(industries).toHaveLength(4);
+  it('should have 10 industry options', () => {
+    const industries = ['restaurant', 'retail', 'medical', 'service', 'cafe', 'gym', 'education', 'petshop', 'repair', 'beauty'];
+    expect(industries).toHaveLength(10);
   });
 
   it('should validate setup data schema', () => {
@@ -17,7 +17,7 @@ describe('Onboarding Flow', () => {
     expect(validSetup.name.length).toBeGreaterThanOrEqual(1);
     expect(validSetup.email).toContain('@');
     expect(validSetup.password.length).toBeGreaterThanOrEqual(6);
-    expect(['restaurant', 'retail', 'medical', 'service']).toContain(validSetup.industry);
+    expect(['restaurant', 'retail', 'medical', 'service', 'cafe', 'gym', 'education', 'petshop', 'repair', 'beauty']).toContain(validSetup.industry);
   });
 
   it('should reject invalid email', () => {
@@ -31,7 +31,7 @@ describe('Onboarding Flow', () => {
   });
 
   it('should reject invalid industry', () => {
-    const validIndustries = ['restaurant', 'retail', 'medical', 'service'];
+    const validIndustries = ['restaurant', 'retail', 'medical', 'service', 'cafe', 'gym', 'education', 'petshop', 'repair', 'beauty'];
     expect(validIndustries).not.toContain('invalid');
   });
 });
