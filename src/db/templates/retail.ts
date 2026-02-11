@@ -1,0 +1,31 @@
+export const retailTemplate = {
+  categories: [
+    { name: '服飾', sortOrder: 1 },
+    { name: '配件', sortOrder: 2 },
+    { name: '鞋類', sortOrder: 3 },
+    { name: '生活用品', sortOrder: 4 },
+    { name: '食品', sortOrder: 5 },
+  ],
+  products: [
+    { name: '棉質T恤', price: 590, category: '服飾', stockQuantity: 100, sku: 'TEE-001', barcode: '4710001001', metadata: JSON.stringify({ variants: [{ size: 'S', color: '白', stock: 30 }, { size: 'M', color: '白', stock: 40 }, { size: 'L', color: '白', stock: 30 }] }) },
+    { name: '牛仔褲', price: 1290, category: '服飾', stockQuantity: 50, sku: 'JNS-001', barcode: '4710001002' },
+    { name: '連帽外套', price: 990, category: '服飾', stockQuantity: 40, sku: 'HOD-001', barcode: '4710001003' },
+    { name: '皮帶', price: 890, category: '配件', stockQuantity: 30, sku: 'BLT-001', barcode: '4710002001' },
+    { name: '太陽眼鏡', price: 1590, category: '配件', stockQuantity: 20, sku: 'SNG-001', barcode: '4710002002' },
+    { name: '手錶', price: 2990, category: '配件', stockQuantity: 15, sku: 'WCH-001', barcode: '4710002003' },
+    { name: '運動鞋', price: 2490, category: '鞋類', stockQuantity: 40, sku: 'SHO-001', barcode: '4710003001' },
+    { name: '皮鞋', price: 3290, category: '鞋類', stockQuantity: 15, sku: 'SHO-002', barcode: '4710003002' },
+    { name: '保溫瓶', price: 790, category: '生活用品', stockQuantity: 60, sku: 'LIF-001', barcode: '4710004001' },
+    { name: '環保袋', price: 290, category: '生活用品', stockQuantity: 80, sku: 'LIF-002', barcode: '4710004002' },
+    { name: '香氛蠟燭', price: 490, category: '生活用品', stockQuantity: 35, sku: 'LIF-003', barcode: '4710004003' },
+    { name: '有機餅乾', price: 120, category: '食品', stockQuantity: 200, sku: 'FD-001', barcode: '4710005001' },
+    { name: '精品巧克力', price: 350, category: '食品', stockQuantity: 50, sku: 'FD-002', barcode: '4710005002' },
+  ],
+  settings: {
+    enableBarcode: true,
+    enableVariants: true,
+    lowStockAlert: true,
+    taxRate: 0.05,
+    currency: 'TWD',
+  },
+};

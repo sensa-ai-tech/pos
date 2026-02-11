@@ -1,0 +1,32 @@
+export const restaurantTemplate = {
+  categories: [
+    { name: '前菜', sortOrder: 1 },
+    { name: '主餐', sortOrder: 2 },
+    { name: '麵食/飯類', sortOrder: 3 },
+    { name: '飲料', sortOrder: 4 },
+    { name: '甜點', sortOrder: 5 },
+  ],
+  products: [
+    { name: '凱薩沙拉', price: 180, category: '前菜', stockQuantity: 50, metadata: JSON.stringify({ prepTime: 10, allergens: ['乳製品'] }) },
+    { name: '蒜香麵包', price: 80, category: '前菜', stockQuantity: 100, metadata: JSON.stringify({ prepTime: 5 }) },
+    { name: '焗烤蘑菇', price: 150, category: '前菜', stockQuantity: 40, metadata: JSON.stringify({ prepTime: 15 }) },
+    { name: '碳烤牛排', price: 580, category: '主餐', stockQuantity: 30, metadata: JSON.stringify({ prepTime: 25 }) },
+    { name: '香煎鮭魚', price: 420, category: '主餐', stockQuantity: 25, metadata: JSON.stringify({ prepTime: 20 }) },
+    { name: '烤春雞', price: 380, category: '主餐', stockQuantity: 20, metadata: JSON.stringify({ prepTime: 30 }) },
+    { name: '義大利麵', price: 280, category: '麵食/飯類', stockQuantity: 60, metadata: JSON.stringify({ prepTime: 15 }) },
+    { name: '燉飯', price: 320, category: '麵食/飯類', stockQuantity: 40, metadata: JSON.stringify({ prepTime: 20 }) },
+    { name: '紅茶', price: 60, category: '飲料', stockQuantity: 200 },
+    { name: '美式咖啡', price: 120, category: '飲料', stockQuantity: 200 },
+    { name: '果汁', price: 100, category: '飲料', stockQuantity: 150 },
+    { name: '提拉米蘇', price: 160, category: '甜點', stockQuantity: 40 },
+    { name: '巧克力蛋糕', price: 140, category: '甜點', stockQuantity: 40 },
+    { name: '冰淇淋', price: 100, category: '甜點', stockQuantity: 60 },
+  ],
+  settings: {
+    enableTableManagement: true,
+    enableDineInTakeout: true,
+    enableKitchenPrint: true,
+    taxRate: 0.05,
+    currency: 'TWD',
+  },
+};

@@ -1,0 +1,32 @@
+export const medicalTemplate = {
+  categories: [
+    { name: '掛號費', sortOrder: 1 },
+    { name: '診療項目', sortOrder: 2 },
+    { name: '藥品', sortOrder: 3 },
+    { name: '檢驗', sortOrder: 4 },
+    { name: '耗材', sortOrder: 5 },
+  ],
+  products: [
+    { name: '一般掛號', price: 150, category: '掛號費', stockQuantity: 999 },
+    { name: '初診掛號', price: 200, category: '掛號費', stockQuantity: 999 },
+    { name: '一般診療', price: 500, category: '診療項目', stockQuantity: 999, metadata: JSON.stringify({ dosage: null, unit: '次' }) },
+    { name: '牙齒洗牙', price: 800, category: '診療項目', stockQuantity: 999, metadata: JSON.stringify({ unit: '次', duration: 30 }) },
+    { name: '物理治療', price: 600, category: '診療項目', stockQuantity: 999, metadata: JSON.stringify({ unit: '次', duration: 45 }) },
+    { name: '普拿疼', price: 30, category: '藥品', stockQuantity: 500, metadata: JSON.stringify({ dosage: '500mg', unit: '錠', requiresPrescription: false, expiryTracking: true }) },
+    { name: '阿莫西林', price: 50, category: '藥品', stockQuantity: 300, metadata: JSON.stringify({ dosage: '250mg', unit: '顆', requiresPrescription: true, expiryTracking: true }) },
+    { name: '胃藥', price: 40, category: '藥品', stockQuantity: 400, metadata: JSON.stringify({ dosage: '20mg', unit: '錠', requiresPrescription: false, expiryTracking: true }) },
+    { name: '血液檢查', price: 350, category: '檢驗', stockQuantity: 999, metadata: JSON.stringify({ unit: '次' }) },
+    { name: 'X光檢查', price: 800, category: '檢驗', stockQuantity: 999, metadata: JSON.stringify({ unit: '次' }) },
+    { name: '尿液檢查', price: 200, category: '檢驗', stockQuantity: 999 },
+    { name: '醫療口罩', price: 5, category: '耗材', stockQuantity: 1000 },
+    { name: '紗布', price: 10, category: '耗材', stockQuantity: 500 },
+    { name: '消毒棉片', price: 8, category: '耗材', stockQuantity: 800 },
+  ],
+  settings: {
+    enableAppointment: true,
+    enablePrescription: true,
+    enableExpiryTracking: true,
+    taxRate: 0,
+    currency: 'TWD',
+  },
+};

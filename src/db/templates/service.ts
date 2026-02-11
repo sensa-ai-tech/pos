@@ -1,0 +1,31 @@
+export const serviceTemplate = {
+  categories: [
+    { name: '基礎服務', sortOrder: 1 },
+    { name: '進階服務', sortOrder: 2 },
+    { name: '加值服務', sortOrder: 3 },
+    { name: '商品', sortOrder: 4 },
+    { name: '套票', sortOrder: 5 },
+  ],
+  products: [
+    { name: '基礎洗髮', price: 200, category: '基礎服務', stockQuantity: 999, metadata: JSON.stringify({ duration_minutes: 20, technician_required: true }) },
+    { name: '基礎剪髮', price: 400, category: '基礎服務', stockQuantity: 999, metadata: JSON.stringify({ duration_minutes: 40, technician_required: true }) },
+    { name: '洗剪吹', price: 550, category: '基礎服務', stockQuantity: 999, metadata: JSON.stringify({ duration_minutes: 60, technician_required: true }) },
+    { name: '染髮', price: 1800, category: '進階服務', stockQuantity: 999, metadata: JSON.stringify({ duration_minutes: 120, technician_required: true }) },
+    { name: '燙髮', price: 2500, category: '進階服務', stockQuantity: 999, metadata: JSON.stringify({ duration_minutes: 150, technician_required: true }) },
+    { name: '頭皮護理', price: 800, category: '進階服務', stockQuantity: 999, metadata: JSON.stringify({ duration_minutes: 45, technician_required: true }) },
+    { name: '護髮', price: 600, category: '加值服務', stockQuantity: 999, metadata: JSON.stringify({ duration_minutes: 30, technician_required: false }) },
+    { name: '造型設計', price: 300, category: '加值服務', stockQuantity: 999, metadata: JSON.stringify({ duration_minutes: 20, technician_required: true }) },
+    { name: '洗髮精', price: 450, category: '商品', stockQuantity: 50 },
+    { name: '護髮素', price: 380, category: '商品', stockQuantity: 40 },
+    { name: '造型噴霧', price: 320, category: '商品', stockQuantity: 30 },
+    { name: '基礎套票 (5次)', price: 2500, category: '套票', stockQuantity: 999, metadata: JSON.stringify({ is_package: true, sessions: 5, per_session: 500 }) },
+    { name: '進階套票 (10次)', price: 8000, category: '套票', stockQuantity: 999, metadata: JSON.stringify({ is_package: true, sessions: 10, per_session: 800 }) },
+  ],
+  settings: {
+    enableBooking: true,
+    enableTechnician: true,
+    enableStoredValue: true,
+    taxRate: 0.05,
+    currency: 'TWD',
+  },
+};
