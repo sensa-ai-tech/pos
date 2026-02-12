@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -15,9 +16,11 @@ import {
   UserCog,
   BarChart3,
   X,
+  ChefHat,
 } from 'lucide-react';
+import { getClientTenantId } from '@/hooks/use-tenant';
 
-const navItems = [
+const baseNavItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/pos', label: 'POS 收銀', icon: ShoppingCart },
   { href: '/products', label: '商品管理', icon: Package },
@@ -30,6 +33,8 @@ const navItems = [
   { href: '/settings', label: '設定', icon: Settings },
 ];
 
+const kitchenNavItem = { href: '/kitchen', label: '後廚系統', icon: ChefHat };
+
 interface SidebarProps {
   open: boolean;
   onClose: () => void;
@@ -37,6 +42,26 @@ interface SidebarProps {
 
 export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const [industry, setIndustry] = useState<string | null>(null);
+
+  useEffect(() => {
+    const tenantId = getClientTenantId();
+    if (tenantId) {
+      fetch(`/api/tenants/${tenantId}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(tenant => {
+          if (tenant?.industry) setIndustry(tenant.industry);
+        })
+        .catch(() => {});
+    }
+  }, []);
+
+  const navItems = [...baseNavItems];
+  // Insert kitchen after orders for restaurant/cafe
+  if (industry === 'restaurant' || industry === 'cafe') {
+    const ordersIndex = navItems.findIndex(item => item.href === '/orders');
+    navItems.splice(ordersIndex + 1, 0, kitchenNavItem);
+  }
 
   return (
     <>

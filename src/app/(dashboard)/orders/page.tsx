@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { Order } from '@/types';
 import { getClientTenantId } from '@/hooks/use-tenant';
@@ -33,6 +34,7 @@ export default function OrdersPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
     const tenantId = getClientTenantId('tenant-a');
@@ -65,6 +67,36 @@ export default function OrdersPage() {
       }
     }
     setExpandedId(orderId);
+  };
+
+  const handleOrderAction = async (orderId: string, newStatus: 'completed' | 'cancelled') => {
+    setActionLoading(orderId);
+    try {
+      const tenantId = getClientTenantId('tenant-a');
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-tenant-id': tenantId,
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        setError(err.error || '操作失敗');
+        return;
+      }
+
+      // Update local state
+      setOrders(prev => prev.map(o =>
+        o.id === orderId ? { ...o, status: newStatus } : o
+      ));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '操作失敗');
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const filteredOrders =
@@ -114,12 +146,13 @@ export default function OrdersPage() {
               <TableHead className="text-right">金額</TableHead>
               <TableHead>狀態</TableHead>
               <TableHead>付款方式</TableHead>
+              <TableHead>操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredOrders.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="py-8 text-center text-neutral-400">
+                <TableCell colSpan={7} className="py-8 text-center text-neutral-400">
                   尚無訂單
                 </TableCell>
               </TableRow>
@@ -154,10 +187,32 @@ export default function OrdersPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>{paymentLabels[order.paymentMethod] || order.paymentMethod}</TableCell>
+                    <TableCell>
+                      {order.status === 'pending' && (
+                        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            size="sm"
+                            variant="default"
+                            disabled={actionLoading === order.id}
+                            onClick={() => handleOrderAction(order.id, 'completed')}
+                          >
+                            結帳
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            disabled={actionLoading === order.id}
+                            onClick={() => handleOrderAction(order.id, 'cancelled')}
+                          >
+                            取消
+                          </Button>
+                        </div>
+                      )}
+                    </TableCell>
                   </TableRow>
                   {expandedId === order.id && order.items && (
                     <TableRow key={`${order.id}-detail`}>
-                      <TableCell colSpan={6} className="bg-neutral-50 p-4">
+                      <TableCell colSpan={7} className="bg-neutral-50 p-4">
                         <div className="space-y-2">
                           <p className="text-sm font-medium">訂單明細</p>
                           <table className="w-full text-sm">

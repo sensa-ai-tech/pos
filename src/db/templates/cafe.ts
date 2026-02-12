@@ -38,6 +38,8 @@ export const cafeTemplate = {
     enableCustomization: true,  // 客製化選項（冰量、甜度）
     enableTakeout: true,
     enableLoyaltyStamp: true,
+    orderFlow: 'pay-first',
+    enableKitchenPrint: true,
     taxRate: 0.05,
     currency: 'TWD',
   },

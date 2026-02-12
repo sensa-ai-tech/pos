@@ -41,8 +41,11 @@ export interface Order {
   status: string;
   subtotal: number;
   tax: number;
+  discount: number;
   total: number;
   paymentMethod: string;
+  metadata?: string | null;
+  notes?: string | null;
   createdAt: string | number;
   items?: OrderItem[];
 }
@@ -54,8 +57,10 @@ export interface Customer {
   name: string;
   phone: string | null;
   email: string | null;
+  notes?: string | null;
   totalSpent: number;
   visitCount: number;
+  createdAt?: string | number;
 }
 
 // ─── Employee ──────────────────────────────────────────────────
@@ -112,6 +117,29 @@ export interface FeatureInfo {
   priceMonthly: number;
   isFree: boolean;
   isActive: boolean;
+}
+
+// ─── Kitchen Order ────────────────────────────────────────────
+
+export interface KitchenOrder {
+  id: string;
+  orderId: string;
+  tenantId: string;
+  status: 'pending' | 'preparing' | 'ready' | 'served';
+  priority: number;
+  notes: string | null;
+  startedAt: string | number | null;
+  completedAt: string | number | null;
+  createdAt: string | number;
+  // Joined fields
+  orderNumber?: string;
+  tableNumber?: number | null;
+  isDineIn?: boolean;
+  items?: Array<{
+    productName: string;
+    quantity: number;
+    notes?: string | null;
+  }>;
 }
 
 // ─── Industry ──────────────────────────────────────────────────

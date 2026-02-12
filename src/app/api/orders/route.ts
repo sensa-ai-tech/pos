@@ -5,8 +5,9 @@ import { eq, and, desc, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { getTenantId, validateTenant } from '@/lib/tenant-context';
 import { sqlite } from '@/db';
+import { createKitchenOrderIfEnabled } from '@/lib/kitchen-helper';
 
-export const DEFAULT_TAX_RATE = 0.05;
+const DEFAULT_TAX_RATE = 0.05;
 const MAX_DISCOUNT = 999999;
 const MAX_METADATA_LENGTH = 5000;
 
@@ -24,6 +25,7 @@ const createOrderSchema = z.object({
   metadata: z.string().max(MAX_METADATA_LENGTH).optional().nullable(),
   taxRate: z.number().min(0).max(1).optional(),
   discount: z.number().min(0).max(MAX_DISCOUNT).finite().optional(),
+  status: z.enum(['pending', 'completed']).optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -79,7 +81,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid request', details: parsed.error.flatten() }, { status: 400 });
     }
 
-    const { items, paymentMethod, customerId, notes, metadata, taxRate = DEFAULT_TAX_RATE, discount = 0 } = parsed.data;
+    const { items, paymentMethod, customerId, notes, metadata, taxRate = DEFAULT_TAX_RATE, discount = 0, status: requestedStatus } = parsed.data;
+    const orderStatus = requestedStatus ?? 'completed';
 
     // Batch-fetch all products in one query (eliminates N+1)
     const productIds = items.map((item) => item.productId);
@@ -137,21 +140,23 @@ export async function POST(request: NextRequest) {
 
     // Execute in transaction — stock check inside for atomicity
     const createOrder = sqlite.transaction(() => {
-      // Batch re-check stock inside transaction to prevent race condition
-      const freshProducts = db.select().from(products)
-        .where(inArray(products.id, productIds))
-        .all();
+      // For completed orders: batch re-check stock inside transaction to prevent race condition
+      if (orderStatus === 'completed') {
+        const freshProducts = db.select().from(products)
+          .where(inArray(products.id, productIds))
+          .all();
 
-      const freshMap = new Map(freshProducts.map((p) => [p.id, p]));
+        const freshMap = new Map(freshProducts.map((p) => [p.id, p]));
 
-      for (const item of items) {
-        const freshProduct = freshMap.get(item.productId);
+        for (const item of items) {
+          const freshProduct = freshMap.get(item.productId);
 
-        if (!freshProduct || freshProduct.stockQuantity < item.quantity) {
-          throw new Error(
-            `Insufficient stock for ${freshProduct?.name ?? item.productId}: ` +
-            `available ${freshProduct?.stockQuantity ?? 0}, requested ${item.quantity}`
-          );
+          if (!freshProduct || freshProduct.stockQuantity < item.quantity) {
+            throw new Error(
+              `Insufficient stock for ${freshProduct?.name ?? item.productId}: ` +
+              `available ${freshProduct?.stockQuantity ?? 0}, requested ${item.quantity}`
+            );
+          }
         }
       }
 
@@ -161,7 +166,7 @@ export async function POST(request: NextRequest) {
         tenantId,
         orderNumber,
         customerId: customerId ?? null,
-        status: 'completed',
+        status: orderStatus,
         subtotal,
         tax,
         discount: effectiveDiscount,
@@ -172,7 +177,7 @@ export async function POST(request: NextRequest) {
         createdAt: now,
       }).run();
 
-      // Create order items
+      // Create order items (always, regardless of status)
       for (const item of orderItemsData) {
         db.insert(orderItems).values({
           ...item,
@@ -180,23 +185,26 @@ export async function POST(request: NextRequest) {
         }).run();
       }
 
-      // Create payment
-      db.insert(payments).values({
-        id: crypto.randomUUID(),
-        tenantId,
-        orderId,
-        amount: total,
-        method: paymentMethod,
-        status: 'completed',
-        createdAt: now,
-      }).run();
+      // Only for completed orders: create payment and deduct stock
+      if (orderStatus === 'completed') {
+        // Create payment
+        db.insert(payments).values({
+          id: crypto.randomUUID(),
+          tenantId,
+          orderId,
+          amount: total,
+          method: paymentMethod,
+          status: 'completed',
+          createdAt: now,
+        }).run();
 
-      // Deduct inventory atomically using Drizzle SQL expression
-      for (const item of items) {
-        db.update(products)
-          .set({ stockQuantity: sql`stock_quantity - ${item.quantity}` })
-          .where(eq(products.id, item.productId))
-          .run();
+        // Deduct inventory atomically using Drizzle SQL expression
+        for (const item of items) {
+          db.update(products)
+            .set({ stockQuantity: sql`stock_quantity - ${item.quantity}` })
+            .where(eq(products.id, item.productId))
+            .run();
+        }
       }
     });
 
@@ -209,6 +217,9 @@ export async function POST(request: NextRequest) {
       }
       throw txError;
     }
+
+    // Auto-create kitchen order if tenant has kitchen printing enabled
+    createKitchenOrderIfEnabled(tenantId, orderId, notes ?? null);
 
     const createdOrder = db.select().from(orders).where(eq(orders.id, orderId)).get();
     const createdItems = db.select().from(orderItems).where(eq(orderItems.orderId, orderId)).all();

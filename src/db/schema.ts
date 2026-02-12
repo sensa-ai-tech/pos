@@ -160,3 +160,30 @@ export const inventory = sqliteTable('inventory', {
   index('idx_inventory_tenant_id').on(table.tenantId),
   index('idx_inventory_product_id').on(table.productId),
 ]);
+
+// ============ Kitchen Orders ============
+export const kitchenOrders = sqliteTable('kitchen_orders', {
+  id: text('id').primaryKey(),
+  orderId: text('order_id').notNull().references(() => orders.id),
+  tenantId: text('tenant_id').notNull().references(() => tenants.id),
+  status: text('status', { enum: ['pending', 'preparing', 'ready', 'served'] }).notNull().default('pending'),
+  priority: integer('priority').notNull().default(0),
+  notes: text('notes'),
+  startedAt: integer('started_at', { mode: 'timestamp' }),
+  completedAt: integer('completed_at', { mode: 'timestamp' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+}, (table) => [
+  index('idx_kitchen_orders_tenant_id').on(table.tenantId),
+  index('idx_kitchen_orders_order_id').on(table.orderId),
+  index('idx_kitchen_orders_status').on(table.status),
+]);
+
+// ============ Platform Admins ============
+export const admins = sqliteTable('admins', {
+  id: text('id').primaryKey(),
+  email: text('email').notNull().unique(),
+  passwordHash: text('password_hash').notNull(),
+  name: text('name').notNull(),
+  role: text('role', { enum: ['super_admin', 'support'] }).notNull().default('support'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});

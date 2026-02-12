@@ -1,14 +1,13 @@
 'use client';
 
-import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 interface TableSelectorProps {
-  onSelect: (tableNumber: number | null) => void;
+  value: number | null;
+  onChange: (tableNumber: number | null) => void;
 }
 
-export function TableSelector({ onSelect }: TableSelectorProps) {
-  const [selected, setSelected] = useState<number | null>(null);
+export function TableSelector({ value, onChange }: TableSelectorProps) {
   const tables = Array.from({ length: 20 }, (_, i) => i + 1);
 
   return (
@@ -20,14 +19,13 @@ export function TableSelector({ onSelect }: TableSelectorProps) {
             key={num}
             className={cn(
               'rounded-md border p-2 text-sm font-medium transition-colors',
-              selected === num
+              value === num
                 ? 'border-blue-500 bg-blue-50 text-blue-700'
                 : 'border-neutral-200 hover:border-neutral-400'
             )}
             onClick={() => {
-              const val = selected === num ? null : num;
-              setSelected(val);
-              onSelect(val);
+              const val = value === num ? null : num;
+              onChange(val);
             }}
           >
             {num}

@@ -10,30 +10,39 @@ const DEFAULT_TAX_RATE = 0.05;
 interface CartPanelProps {
   tenantId: string;
   taxRate?: number;
+  tableNumber?: number | null;
+  isDineIn?: boolean;
+  industry?: string | null;
+  orderFlow?: 'pay-first' | 'dine-first';
 }
 
 // Module-level lock to prevent duplicate checkout in StrictMode
 let _checkoutLock = false;
 
-export function CartPanel({ tenantId, taxRate = DEFAULT_TAX_RATE }: CartPanelProps) {
+export function CartPanel({ tenantId, taxRate = DEFAULT_TAX_RATE, tableNumber, isDineIn, industry, orderFlow }: CartPanelProps) {
   const { items, updateQuantity, removeItem, clearCart, getSubtotal, getTax, getTotal } =
     useCartStore();
   const [paymentMethod, setPaymentMethod] = useState<string>('cash');
   const [loading, setLoading] = useState(false);
   const [lastOrder, setLastOrder] = useState<string | null>(null);
+  const [lastOrderStatus, setLastOrderStatus] = useState<'pending' | 'completed' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const subtotal = getSubtotal();
   const tax = getTax(taxRate);
   const total = getTotal(taxRate);
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (orderStatus: 'pending' | 'completed' = 'completed') => {
     if (items.length === 0 || _checkoutLock) return;
     _checkoutLock = true;
     setLoading(true);
     setError(null);
 
     try {
+      const metadata: Record<string, unknown> = {};
+      if (tableNumber) metadata.tableNumber = tableNumber;
+      if (isDineIn !== undefined) metadata.isDineIn = isDineIn;
+
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: {
@@ -47,17 +56,20 @@ export function CartPanel({ tenantId, taxRate = DEFAULT_TAX_RATE }: CartPanelPro
           })),
           paymentMethod,
           taxRate,
+          status: orderStatus,
+          metadata: Object.keys(metadata).length > 0 ? JSON.stringify(metadata) : undefined,
         }),
       });
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || '結帳失敗');
+        throw new Error(err.error || '操作失敗');
       }
 
       const order = await res.json();
       clearCart();
       setLastOrder(order.orderNumber);
+      setLastOrderStatus(orderStatus);
     } catch (err) {
       setError(err instanceof Error ? err.message : '未知錯誤');
     } finally {
@@ -73,9 +85,18 @@ export function CartPanel({ tenantId, taxRate = DEFAULT_TAX_RATE }: CartPanelPro
       <div className="flex-1 overflow-auto p-4">
         {/* Success message */}
         {lastOrder && items.length === 0 && (
-          <div className="mb-3 rounded-md border border-green-200 bg-green-50 p-3 text-green-800">
-            <p className="text-sm font-semibold">結帳成功</p>
+          <div className={`mb-3 rounded-md border p-3 ${
+            lastOrderStatus === 'pending'
+              ? 'border-blue-200 bg-blue-50 text-blue-800'
+              : 'border-green-200 bg-green-50 text-green-800'
+          }`}>
+            <p className="text-sm font-semibold">
+              {lastOrderStatus === 'pending' ? '訂單已送出' : '結帳成功'}
+            </p>
             <p className="text-xs">訂單編號：{lastOrder}</p>
+            {lastOrderStatus === 'pending' && (
+              <p className="text-xs mt-1">訂單已送至廚房，用餐完畢後可至訂單頁面結帳</p>
+            )}
           </div>
         )}
 
@@ -134,6 +155,12 @@ export function CartPanel({ tenantId, taxRate = DEFAULT_TAX_RATE }: CartPanelPro
       </div>
 
       <div className="border-t p-4 space-y-3">
+        {industry === 'restaurant' && (tableNumber || isDineIn !== undefined) && (
+          <div className="mb-3 rounded-md bg-blue-50 p-2 text-sm">
+            {isDineIn !== undefined && <span className="mr-3">{isDineIn ? '🍽️ 內用' : '📦 外帶'}</span>}
+            {tableNumber && <span>桌號：{tableNumber}</span>}
+          </div>
+        )}
         <div className="space-y-1 text-sm">
           <div className="flex justify-between">
             <span>小計</span>
@@ -163,17 +190,48 @@ export function CartPanel({ tenantId, taxRate = DEFAULT_TAX_RATE }: CartPanelPro
           ))}
         </div>
 
-        <Button
-          className="w-full"
-          size="lg"
-          disabled={items.length === 0 || loading}
-          onClick={() => {
-            setLastOrder(null);
-            handleCheckout();
-          }}
-        >
-          {loading ? '處理中...' : `結帳 $${total}`}
-        </Button>
+        {orderFlow === 'dine-first' ? (
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              size="lg"
+              disabled={items.length === 0 || loading}
+              onClick={() => {
+                setLastOrder(null);
+                setLastOrderStatus(null);
+                handleCheckout('pending');
+              }}
+            >
+              {loading ? '處理中...' : '送出訂單'}
+            </Button>
+            <Button
+              className="flex-1"
+              size="lg"
+              disabled={items.length === 0 || loading}
+              onClick={() => {
+                setLastOrder(null);
+                setLastOrderStatus(null);
+                handleCheckout('completed');
+              }}
+            >
+              {loading ? '處理中...' : `直接結帳 $${total}`}
+            </Button>
+          </div>
+        ) : (
+          <Button
+            className="w-full"
+            size="lg"
+            disabled={items.length === 0 || loading}
+            onClick={() => {
+              setLastOrder(null);
+              setLastOrderStatus(null);
+              handleCheckout();
+            }}
+          >
+            {loading ? '處理中...' : `結帳 $${total}`}
+          </Button>
+        )}
       </div>
     </div>
   );

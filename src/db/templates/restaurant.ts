@@ -26,6 +26,7 @@ export const restaurantTemplate = {
     enableTableManagement: true,
     enableDineInTakeout: true,
     enableKitchenPrint: true,
+    orderFlow: 'pay-first',
     taxRate: 0.05,
     currency: 'TWD',
   },

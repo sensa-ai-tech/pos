@@ -19,15 +19,17 @@ const DiagnosisNote = dynamic(() => import('@/components/pos/medical/diagnosis-n
 const BookingSlot = dynamic(() => import('@/components/pos/service/booking-slot').then(m => ({ default: m.BookingSlot })));
 const TechnicianSelect = dynamic(() => import('@/components/pos/service/technician-select').then(m => ({ default: m.TechnicianSelect })));
 
-function RestaurantExtras() {
-  const [selectedTable, setSelectedTable] = useState<number | null>(null);
-  const [isDineIn, setIsDineIn] = useState(true);
-
+function RestaurantExtras({ selectedTable, setSelectedTable, isDineIn, setIsDineIn }: {
+  selectedTable: number | null;
+  setSelectedTable: (v: number | null) => void;
+  isDineIn: boolean;
+  setIsDineIn: (v: boolean) => void;
+}) {
   return (
     <div className="space-y-3 rounded-lg border bg-white p-3">
       <h3 className="text-sm font-semibold text-neutral-700">餐飲設定</h3>
-      <DineInToggle onChange={setIsDineIn} />
-      {isDineIn && <TableSelector onSelect={setSelectedTable} />}
+      <DineInToggle value={isDineIn} onChange={setIsDineIn} />
+      {isDineIn && <TableSelector value={selectedTable} onChange={setSelectedTable} />}
       {selectedTable && (
         <p className="text-xs text-neutral-500">已選桌號：{selectedTable}</p>
       )}
@@ -76,6 +78,9 @@ export default function POSPage() {
   const [tenantId, setTenantId] = useState('tenant-a');
   const [industry, setIndustry] = useState<Industry>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedTable, setSelectedTable] = useState<number | null>(null);
+  const [isDineIn, setIsDineIn] = useState(true);
+  const [orderFlow, setOrderFlow] = useState<'pay-first' | 'dine-first'>('pay-first');
 
   const fetchData = useCallback(async (tid: string) => {
     try {
@@ -109,6 +114,15 @@ export default function POSPage() {
       if (tenantRes.ok) {
         const tenant = await tenantRes.json();
         setIndustry(tenant.industry ?? null);
+        // Parse settings to get orderFlow
+        if (tenant.settings) {
+          try {
+            const settings = typeof tenant.settings === 'string' ? JSON.parse(tenant.settings) : tenant.settings;
+            setOrderFlow(settings.orderFlow ?? 'pay-first');
+          } catch {
+            setOrderFlow('pay-first');
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to fetch POS data:', error);
@@ -149,7 +163,14 @@ export default function POSPage() {
         />
 
         {/* Industry-specific panel */}
-        {industry === 'restaurant' && <RestaurantExtras />}
+        {industry === 'restaurant' && (
+          <RestaurantExtras
+            selectedTable={selectedTable}
+            setSelectedTable={setSelectedTable}
+            isDineIn={isDineIn}
+            setIsDineIn={setIsDineIn}
+          />
+        )}
         {industry === 'retail' && <RetailExtras onBarcodeSearch={handleBarcodeSearch} />}
         {industry === 'medical' && <MedicalExtras />}
         {industry === 'service' && <ServiceExtras />}
@@ -165,7 +186,13 @@ export default function POSPage() {
 
       {/* Right: Cart */}
       <div className="w-80 flex-shrink-0 rounded-lg border bg-white">
-        <CartPanel tenantId={tenantId} />
+        <CartPanel
+          tenantId={tenantId}
+          tableNumber={industry === 'restaurant' ? selectedTable : undefined}
+          isDineIn={industry === 'restaurant' ? isDineIn : undefined}
+          industry={industry}
+          orderFlow={(industry === 'restaurant' || industry === 'cafe') ? orderFlow : undefined}
+        />
       </div>
     </div>
   );

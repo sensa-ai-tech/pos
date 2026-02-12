@@ -6,13 +6,38 @@ const PUBLIC_PATHS = ['/onboarding', '/api/tenants/setup', '/api/tenants'];
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow public paths
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+  // Allow static assets and Next.js internals
+  if (pathname.startsWith('/_next/') || pathname.startsWith('/favicon.ico')) {
     return NextResponse.next();
   }
 
-  // Allow static assets and Next.js internals
-  if (pathname.startsWith('/_next/') || pathname.startsWith('/favicon.ico')) {
+  // ============ Admin Routes ============
+  // Admin login page and admin login API are always accessible
+  if (pathname === '/admin/login' || pathname === '/api/admin/login') {
+    return NextResponse.next();
+  }
+
+  // Admin API routes — check admin_id cookie
+  if (pathname.startsWith('/api/admin/')) {
+    const adminId = request.cookies.get('admin_id')?.value;
+    if (!adminId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    return NextResponse.next();
+  }
+
+  // Admin pages — check admin_id cookie, redirect to admin login if missing
+  if (pathname.startsWith('/admin')) {
+    const adminId = request.cookies.get('admin_id')?.value;
+    if (!adminId) {
+      return NextResponse.redirect(new URL('/admin/login', request.url));
+    }
+    return NextResponse.next();
+  }
+
+  // ============ Tenant Routes ============
+  // Allow public paths
+  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 
