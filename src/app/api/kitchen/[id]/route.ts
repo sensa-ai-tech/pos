@@ -9,10 +9,8 @@ const updateKitchenSchema = z.object({
   status: z.enum(['pending', 'preparing', 'ready', 'served']),
 });
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const tenantId = getTenantId(request);
   if (!tenantId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

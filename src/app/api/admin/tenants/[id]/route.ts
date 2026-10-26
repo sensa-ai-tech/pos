@@ -4,10 +4,8 @@ import { tenants, orders, products, users, customers } from '@/db/schema';
 import { eq, sql, desc, and, gte } from 'drizzle-orm';
 import { getAdminFromRequest } from '@/lib/admin-auth';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const admin = getAdminFromRequest(request);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

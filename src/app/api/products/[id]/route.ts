@@ -20,10 +20,8 @@ const updateProductSchema = z.object({
   metadata: z.string().max(5000).optional().nullable(),
 });
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const tenantId = getTenantId(request);
   if (!tenantId) {
     return NextResponse.json({ error: 'Unauthorized: tenant identification required' }, { status: 401 });
@@ -40,10 +38,8 @@ export async function GET(
   return NextResponse.json(product);
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const tenantId = getTenantId(request);
   if (!tenantId) {
     return NextResponse.json({ error: 'Unauthorized: tenant identification required' }, { status: 401 });
@@ -80,10 +76,8 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const tenantId = getTenantId(request);
   if (!tenantId) {
     return NextResponse.json({ error: 'Unauthorized: tenant identification required' }, { status: 401 });

@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 
-export function getAuthFromCookies() {
-  const cookieStore = cookies();
+export async function getAuthFromCookies() {
+  const cookieStore = await cookies();
   const tenantId = cookieStore.get('tenant_id')?.value || null;
   const userId = cookieStore.get('user_id')?.value || null;
   let tenantName: string | null = null;
@@ -20,7 +20,7 @@ export function getAuthFromCookies() {
   return { tenantId, userId, tenantName };
 }
 
-export function isAuthenticated() {
-  const { tenantId, userId } = getAuthFromCookies();
+export async function isAuthenticated() {
+  const { tenantId, userId } = await getAuthFromCookies();
   return !!(tenantId && userId);
 }
