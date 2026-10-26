@@ -6,10 +6,8 @@ import { getTenantId, validateTenant } from '@/lib/tenant-context';
 import { sqlite } from '@/db';
 import { z } from 'zod';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const tenantId = getTenantId(request);
   if (!tenantId) {
     return NextResponse.json({ error: 'Unauthorized: tenant identification required' }, { status: 401 });
@@ -35,10 +33,8 @@ const patchOrderSchema = z.object({
   paymentMethod: z.enum(['cash', 'card', 'transfer', 'other']).optional(),
 });
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const tenantId = getTenantId(request);
   if (!tenantId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
