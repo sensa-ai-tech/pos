@@ -8,7 +8,7 @@ const deactivateSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const tenantId = getTenantId(request);
+  const tenantId = await getTenantId(request);
   if (!tenantId) {
     return NextResponse.json({ error: 'Unauthorized: tenant identification required' }, { status: 401 });
   }

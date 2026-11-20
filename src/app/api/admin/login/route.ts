@@ -4,6 +4,12 @@ import { admins } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import {
+  ADMIN_SESSION_COOKIE,
+  ADMIN_SESSION_MAX_AGE_SECONDS,
+  sessionCookieOptions,
+  signSession,
+} from '@/lib/session';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -33,14 +39,9 @@ export async function POST(request: NextRequest) {
       role: admin.role,
     });
 
-    // Set admin session cookie
-    response.cookies.set('admin_id', admin.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24, // 24 hours
-    });
+    // Signed admin session cookie (httpOnly)
+    const sessionToken = await signSession({ kind: 'admin', adminId: admin.id }, ADMIN_SESSION_MAX_AGE_SECONDS);
+    response.cookies.set(ADMIN_SESSION_COOKIE, sessionToken, sessionCookieOptions(ADMIN_SESSION_MAX_AGE_SECONDS));
 
     return response;
   } catch (error) {

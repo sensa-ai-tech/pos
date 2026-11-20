@@ -8,7 +8,7 @@ type ApiHandler = (
 
 export function withTenant(handler: ApiHandler) {
   return async (request: NextRequest, _routeContext?: unknown) => {
-    const tenantId = getTenantId(request);
+    const tenantId = await getTenantId(request);
     if (!tenantId) {
       return NextResponse.json(
         { error: 'Unauthorized: tenant identification required' },

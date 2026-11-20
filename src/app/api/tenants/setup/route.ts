@@ -14,8 +14,13 @@ import { educationTemplate } from '@/db/templates/education';
 import { petshopTemplate } from '@/db/templates/petshop';
 import { repairTemplate } from '@/db/templates/repair';
 import { beautyTemplate } from '@/db/templates/beauty';
-
-const COOKIE_MAX_AGE = 86400 * 30; // 30 days
+import {
+  CLIENT_TENANT_ID_COOKIE,
+  TENANT_SESSION_COOKIE,
+  TENANT_SESSION_MAX_AGE_SECONDS,
+  sessionCookieOptions,
+  signSession,
+} from '@/lib/session';
 
 function hashPassword(password: string): string {
   const salt = bcrypt.genSaltSync(10);
@@ -64,6 +69,11 @@ export async function POST(request: NextRequest) {
     const tenantId = crypto.randomUUID();
     const userId = crypto.randomUUID();
     const now = new Date();
+    // Sign before writing so a missing SESSION_SECRET cannot leave a half-onboarded tenant.
+    const sessionToken = await signSession(
+      { kind: 'tenant', tenantId, userId },
+      TENANT_SESSION_MAX_AGE_SECONDS
+    );
 
     const setup = sqlite.transaction(() => {
       // 1. Create tenant
@@ -140,24 +150,17 @@ export async function POST(request: NextRequest) {
       redirect: '/pos',
     }, { status: 201 });
 
-    // Set cookies for auth
-    response.cookies.set('tenant_id', tenantId, {
+    // Signed session cookie (httpOnly). client_tenant_id / tenant_name are display-only hints.
+    response.cookies.set(TENANT_SESSION_COOKIE, sessionToken, sessionCookieOptions(TENANT_SESSION_MAX_AGE_SECONDS));
+    response.cookies.set(CLIENT_TENANT_ID_COOKIE, tenantId, {
       path: '/',
-      maxAge: COOKIE_MAX_AGE,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-    });
-    response.cookies.set('user_id', userId, {
-      path: '/',
-      maxAge: COOKIE_MAX_AGE,
-      httpOnly: true,
+      maxAge: TENANT_SESSION_MAX_AGE_SECONDS,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
     });
     response.cookies.set('tenant_name', encodeURIComponent(name), {
       path: '/',
-      maxAge: COOKIE_MAX_AGE,
+      maxAge: TENANT_SESSION_MAX_AGE_SECONDS,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
     });

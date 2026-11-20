@@ -64,9 +64,14 @@ export default function AdminDashboardPage() {
       .finally(() => setLoading(false));
   }, [router]);
 
-  const handleLogout = () => {
-    document.cookie = 'admin_id=; path=/; max-age=0';
-    router.push('/admin/login');
+  const handleLogout = async () => {
+    try {
+      const res = await fetch('/api/admin/logout', { method: 'POST' });
+      if (!res.ok) throw new Error('Logout failed');
+      router.push('/admin/login');
+    } catch {
+      setError('登出失敗，請稍後再試');
+    }
   };
 
   const totalRevenue = tenants.reduce((sum, t) => sum + (t.stats?.totalRevenue ?? 0), 0);

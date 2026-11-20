@@ -4,6 +4,7 @@ import { tenants } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { getSettingsSchema } from '@/lib/settings-schema';
+import { getTenantId } from '@/lib/tenant-context';
 
 const updateSchema = z.object({
   name: z.string().trim().min(1).max(100).optional(),
@@ -13,9 +14,12 @@ const updateSchema = z.object({
 export async function PATCH(request: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   try {
-    const tenantId = request.headers.get('x-tenant-id');
-    if (!tenantId || tenantId !== params.id) {
+    const tenantId = await getTenantId(request);
+    if (!tenantId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (tenantId !== params.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const tenant = db.select().from(tenants).where(eq(tenants.id, params.id)).get();

@@ -1,6 +1,7 @@
 /**
  * Client-side tenant utilities
- * Extracts tenant_id and tenant_name from document.cookie
+ * Extracts client_tenant_id and tenant_name from document.cookie.
+ * These are display hints only; the server authorizes requests from the signed, httpOnly session cookie.
  */
 
 function parseCookies(): Record<string, string> {
@@ -18,7 +19,7 @@ function parseCookies(): Record<string, string> {
  */
 export function getClientTenantId(defaultValue: string = ''): string {
   const cookies = parseCookies();
-  return cookies['tenant_id'] || defaultValue;
+  return cookies['client_tenant_id'] || defaultValue;
 }
 
 /**

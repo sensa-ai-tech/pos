@@ -1,9 +1,11 @@
 import { cookies } from 'next/headers';
+import { TENANT_SESSION_COOKIE, verifySession } from '@/lib/session';
 
 export async function getAuthFromCookies() {
   const cookieStore = await cookies();
-  const tenantId = cookieStore.get('tenant_id')?.value || null;
-  const userId = cookieStore.get('user_id')?.value || null;
+  const session = await verifySession(cookieStore.get(TENANT_SESSION_COOKIE)?.value, 'tenant');
+  const tenantId = session?.tenantId ?? null;
+  const userId = session?.userId ?? null;
   let tenantName: string | null = null;
   const rawName = cookieStore.get('tenant_name')?.value;
   if (rawName) {

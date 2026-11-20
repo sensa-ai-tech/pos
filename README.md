@@ -2,6 +2,12 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+Required environment variable (the server refuses to start without it):
+
+- `SESSION_SECRET`: random string of at least 32 characters used to sign session cookies, e.g. `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`.
+
+Creating the first platform admin (`scripts/seed-admin.ts`) reads `SEED_ADMIN_EMAIL` and optionally `SEED_ADMIN_PASSWORD`; without a password it generates a random one and prints it once.
+
 First, run the development server:
 
 ```bash

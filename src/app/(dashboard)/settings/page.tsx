@@ -171,11 +171,14 @@ export default function SettingsPage() {
     }
   };
 
-  const handleLogout = () => {
-    document.cookie = 'tenant_id=; path=/; max-age=0';
-    document.cookie = 'user_id=; path=/; max-age=0';
-    document.cookie = 'tenant_name=; path=/; max-age=0';
-    window.location.href = '/onboarding';
+  const handleLogout = async () => {
+    try {
+      const res = await fetch('/api/auth/logout', { method: 'POST' });
+      if (!res.ok) throw new Error('登出失敗');
+      window.location.href = '/onboarding';
+    } catch {
+      toast({ title: '登出失敗', description: '請稍後再試', variant: 'destructive' });
+    }
   };
 
   const updateIndustrySetting = (key: string, value: unknown) => {

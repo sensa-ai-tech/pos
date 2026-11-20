@@ -6,7 +6,7 @@ import { getTenantId } from '@/lib/tenant-context';
 import { hasFeature } from '@/lib/feature-gate';
 
 export async function GET(request: NextRequest) {
-  const tenantId = getTenantId(request);
+  const tenantId = await getTenantId(request);
   if (!tenantId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

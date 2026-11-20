@@ -6,7 +6,7 @@ import { hasFeature } from '@/lib/feature-gate';
 import { eq, and, gte, sql } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
-  const tenantId = getTenantId(request);
+  const tenantId = await getTenantId(request);
   if (!tenantId) {
     return NextResponse.json({ error: 'Unauthorized: tenant identification required' }, { status: 401 });
   }
