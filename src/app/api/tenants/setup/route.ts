@@ -14,8 +14,9 @@ import { educationTemplate } from '@/db/templates/education';
 import { petshopTemplate } from '@/db/templates/petshop';
 import { repairTemplate } from '@/db/templates/repair';
 import { beautyTemplate } from '@/db/templates/beauty';
-
-const COOKIE_MAX_AGE = 86400 * 30; // 30 days
+import { TENANT_SESSION_MAX_AGE_SECONDS, signSession } from '@/lib/session';
+import { setTenantSessionCookies } from '@/lib/tenant-session-cookies';
+import { LEGACY_DEFAULT_EMPLOYEE_PASSWORD, containsNulCharacter } from '@/lib/tenant-login';
 
 function hashPassword(password: string): string {
   const salt = bcrypt.genSaltSync(10);
@@ -25,7 +26,9 @@ function hashPassword(password: string): string {
 const setupSchema = z.object({
   name: z.string().trim().min(1).max(100),
   email: z.string().email(),
-  password: z.string().min(6).max(128),
+  password: z.string().min(6).max(128)
+    .refine((value) => !containsNulCharacter(value), { message: '密碼含有不允許的字元' })
+    .refine((value) => value !== LEGACY_DEFAULT_EMPLOYEE_PASSWORD, { message: '這組密碼不能使用' }),
   industry: z.enum(['restaurant', 'retail', 'medical', 'service', 'cafe', 'gym', 'education', 'petshop', 'repair', 'beauty']),
 });
 
@@ -64,6 +67,11 @@ export async function POST(request: NextRequest) {
     const tenantId = crypto.randomUUID();
     const userId = crypto.randomUUID();
     const now = new Date();
+    // Sign before writing so a missing SESSION_SECRET cannot leave a half-onboarded tenant.
+    const sessionToken = await signSession(
+      { kind: 'tenant', tenantId, userId },
+      TENANT_SESSION_MAX_AGE_SECONDS
+    );
 
     const setup = sqlite.transaction(() => {
       // 1. Create tenant
@@ -140,27 +148,7 @@ export async function POST(request: NextRequest) {
       redirect: '/pos',
     }, { status: 201 });
 
-    // Set cookies for auth
-    response.cookies.set('tenant_id', tenantId, {
-      path: '/',
-      maxAge: COOKIE_MAX_AGE,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-    });
-    response.cookies.set('user_id', userId, {
-      path: '/',
-      maxAge: COOKIE_MAX_AGE,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-    });
-    response.cookies.set('tenant_name', encodeURIComponent(name), {
-      path: '/',
-      maxAge: COOKIE_MAX_AGE,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-    });
+    setTenantSessionCookies(response, { sessionToken, tenantId, tenantName: name });
 
     return response;
   } catch (error) {

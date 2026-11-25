@@ -1,9 +1,31 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import {
+  ADMIN_SESSION_COOKIE,
+  TENANT_SESSION_COOKIE,
+  SessionSecretError,
+  verifySession,
+} from '@/lib/session';
 
-const PUBLIC_PATHS = ['/onboarding', '/api/tenants/setup', '/api/tenants'];
+// Exact paths reachable without a tenant session.
+const PUBLIC_PATHS = new Set([
+  '/onboarding',
+  '/login',
+  '/api/tenants/setup',
+  '/api/auth/login',
+  '/api/auth/logout',
+]);
+// Exact admin paths reachable without an admin session.
+const ADMIN_PUBLIC_PATHS = new Set(['/admin/login', '/api/admin/login', '/api/admin/logout']);
 
-export function middleware(request: NextRequest) {
+// Identity headers that only the middleware may set; client-supplied values are always dropped.
+const IDENTITY_HEADERS = ['x-tenant-id', 'x-user-id', 'x-admin-id'];
+
+function isUnder(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow static assets and Next.js internals
@@ -11,59 +33,53 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // ============ Admin Routes ============
-  // Admin login page and admin login API are always accessible
-  if (pathname === '/admin/login' || pathname === '/api/admin/login') {
-    return NextResponse.next();
-  }
+  const requestHeaders = new Headers(request.headers);
+  for (const header of IDENTITY_HEADERS) requestHeaders.delete(header);
+  const next = () => NextResponse.next({ request: { headers: requestHeaders } });
 
-  // Admin API routes — check admin_id cookie
-  if (pathname.startsWith('/api/admin/')) {
-    const adminId = request.cookies.get('admin_id')?.value;
-    if (!adminId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    // ============ Admin Routes ============
+    if (ADMIN_PUBLIC_PATHS.has(pathname)) {
+      return next();
     }
-    return NextResponse.next();
-  }
 
-  // Admin pages — check admin_id cookie, redirect to admin login if missing
-  if (pathname.startsWith('/admin')) {
-    const adminId = request.cookies.get('admin_id')?.value;
-    if (!adminId) {
-      return NextResponse.redirect(new URL('/admin/login', request.url));
+    if (isUnder(pathname, '/api/admin') || isUnder(pathname, '/admin')) {
+      const session = await verifySession(request.cookies.get(ADMIN_SESSION_COOKIE)?.value, 'admin');
+      if (!session) {
+        if (pathname.startsWith('/api/')) {
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        return NextResponse.redirect(new URL('/admin/login', request.url));
+      }
+      requestHeaders.set('x-admin-id', session.adminId);
+      return next();
     }
-    return NextResponse.next();
-  }
 
-  // ============ Tenant Routes ============
-  // Allow public paths
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
-    return NextResponse.next();
-  }
-
-  // Check for tenant_id cookie
-  const tenantId = request.cookies.get('tenant_id')?.value;
-  if (!tenantId) {
-    // For API routes, return 401
-    if (pathname.startsWith('/api/')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // ============ Tenant Routes ============
+    if (PUBLIC_PATHS.has(pathname)) {
+      return next();
     }
-    // For pages, redirect to onboarding
-    return NextResponse.redirect(new URL('/onboarding', request.url));
-  }
 
-  // For API routes, inject tenant_id from cookie into request headers
-  if (pathname.startsWith('/api/')) {
-    const requestHeaders = new Headers(request.headers);
-    requestHeaders.set('x-tenant-id', tenantId);
-    return NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    });
-  }
+    const session = await verifySession(request.cookies.get(TENANT_SESSION_COOKIE)?.value, 'tenant');
+    if (!session) {
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      const loginUrl = new URL('/login', request.url);
+      if (pathname !== '/') loginUrl.searchParams.set('next', `${pathname}${request.nextUrl.search}`);
+      return NextResponse.redirect(loginUrl);
+    }
 
-  return NextResponse.next();
+    requestHeaders.set('x-tenant-id', session.tenantId);
+    requestHeaders.set('x-user-id', session.userId);
+    return next();
+  } catch (error) {
+    if (error instanceof SessionSecretError) {
+      console.error('Session secret is not configured:', error.message);
+      return NextResponse.json({ error: 'Server misconfigured' }, { status: 503 });
+    }
+    throw error;
+  }
 }
 
 export const config = {

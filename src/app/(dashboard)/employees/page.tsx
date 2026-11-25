@@ -27,6 +27,7 @@ export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [locked, setLocked] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [issuedPassword, setIssuedPassword] = useState<{ email: string; password: string } | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', role: 'cashier' });
   const [saving, setSaving] = useState(false);
@@ -63,8 +64,11 @@ export default function EmployeesPage() {
         setError(err.error || '新增失敗');
         return;
       }
-      const created = await res.json();
+      const { temporaryPassword, ...created } = (await res.json()) as Employee & { temporaryPassword?: string };
       setEmployees(prev => [created, ...prev]);
+      if (temporaryPassword) {
+        setIssuedPassword({ email: created.email, password: temporaryPassword });
+      }
       setFormData({ name: '', email: '', role: 'cashier' });
       setShowForm(false);
     } catch {
@@ -115,6 +119,15 @@ export default function EmployeesPage() {
         </div>
       )}
 
+      {issuedPassword && (
+        <div role="status" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          已建立 {issuedPassword.email}，臨時密碼：
+          <code className="mx-1 rounded bg-white px-2 py-0.5 font-mono">{issuedPassword.password}</code>
+          這組密碼只顯示這一次，請現在交給員工。
+          <button className="ml-2 underline" onClick={() => setIssuedPassword(null)}>我已記下</button>
+        </div>
+      )}
+
       {showForm && (
         <div className="rounded-lg border bg-white p-4 space-y-3">
           <h3 className="font-semibold">新增員工</h3>
@@ -141,7 +154,7 @@ export default function EmployeesPage() {
               <option value="owner">老闆</option>
             </select>
           </div>
-          <p className="text-xs text-neutral-500">新員工預設密碼為 changeme123，請提醒員工登入後修改</p>
+          <p className="text-xs text-neutral-500">儲存後會產生一組臨時密碼，只顯示一次。目前只有「老闆」角色可以從 /login 登入，店長與收銀員待權限分級完成後開放</p>
           <div className="flex gap-2">
             <Button size="sm" onClick={handleCreate} disabled={saving}>
               {saving ? '儲存中...' : '儲存'}
