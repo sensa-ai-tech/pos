@@ -8,7 +8,13 @@ import {
 } from '@/lib/session';
 
 // Exact paths reachable without a tenant session.
-const PUBLIC_PATHS = new Set(['/onboarding', '/api/tenants/setup', '/api/auth/logout']);
+const PUBLIC_PATHS = new Set([
+  '/onboarding',
+  '/login',
+  '/api/tenants/setup',
+  '/api/auth/login',
+  '/api/auth/logout',
+]);
 // Exact admin paths reachable without an admin session.
 const ADMIN_PUBLIC_PATHS = new Set(['/admin/login', '/api/admin/login', '/api/admin/logout']);
 
@@ -59,7 +65,9 @@ export async function middleware(request: NextRequest) {
       if (pathname.startsWith('/api/')) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
-      return NextResponse.redirect(new URL('/onboarding', request.url));
+      const loginUrl = new URL('/login', request.url);
+      if (pathname !== '/') loginUrl.searchParams.set('next', `${pathname}${request.nextUrl.search}`);
+      return NextResponse.redirect(loginUrl);
     }
 
     requestHeaders.set('x-tenant-id', session.tenantId);

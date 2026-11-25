@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,6 +67,12 @@ export default function OnboardingPage() {
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold">OneKey POS</h1>
           <p className="mt-2 text-neutral-500">一鍵生成你的 POS 系統</p>
+          <p className="mt-2 text-sm text-neutral-500">
+            已經有店舖了？{' '}
+            <Link href="/login" className="font-medium text-neutral-900 underline">
+              登入
+            </Link>
+          </p>
         </div>
 
         {/* Step indicator */}

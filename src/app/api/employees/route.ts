@@ -13,6 +13,15 @@ const createEmployeeSchema = z.object({
   role: z.enum(['owner', 'manager', 'cashier']),
 });
 
+// Excludes look-alike characters (0/O, 1/l/I) so the password can be read aloud or copied by hand.
+const TEMPORARY_PASSWORD_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+
+function generateTemporaryPassword(length = 12): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(length));
+  // 256 % 56 bias is negligible for a temporary password.
+  return Array.from(bytes, (byte) => TEMPORARY_PASSWORD_ALPHABET[byte % TEMPORARY_PASSWORD_ALPHABET.length]).join('');
+}
+
 export async function GET(request: NextRequest) {
   const tenantId = await getTenantId(request);
   if (!tenantId) {
@@ -61,9 +70,10 @@ export async function POST(request: NextRequest) {
     }
 
     const id = crypto.randomUUID();
-    // Default password - in production should send invitation email
+    // Random temporary password, returned once in this response and never stored in plain text.
+    const temporaryPassword = generateTemporaryPassword();
     const salt = bcrypt.genSaltSync(10);
-    const passwordHash = bcrypt.hashSync('changeme123', salt);
+    const passwordHash = bcrypt.hashSync(temporaryPassword, salt);
 
     db.insert(users).values({
       id,
@@ -83,7 +93,7 @@ export async function POST(request: NextRequest) {
       createdAt: users.createdAt,
     }).from(users).where(eq(users.id, id)).get();
 
-    return NextResponse.json(created, { status: 201 });
+    return NextResponse.json({ ...created, temporaryPassword }, { status: 201 });
   } catch (error) {
     console.error('Employee creation error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

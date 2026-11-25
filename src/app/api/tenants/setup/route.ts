@@ -14,13 +14,9 @@ import { educationTemplate } from '@/db/templates/education';
 import { petshopTemplate } from '@/db/templates/petshop';
 import { repairTemplate } from '@/db/templates/repair';
 import { beautyTemplate } from '@/db/templates/beauty';
-import {
-  CLIENT_TENANT_ID_COOKIE,
-  TENANT_SESSION_COOKIE,
-  TENANT_SESSION_MAX_AGE_SECONDS,
-  sessionCookieOptions,
-  signSession,
-} from '@/lib/session';
+import { TENANT_SESSION_MAX_AGE_SECONDS, signSession } from '@/lib/session';
+import { setTenantSessionCookies } from '@/lib/tenant-session-cookies';
+import { LEGACY_DEFAULT_EMPLOYEE_PASSWORD } from '@/lib/tenant-login';
 
 function hashPassword(password: string): string {
   const salt = bcrypt.genSaltSync(10);
@@ -30,7 +26,8 @@ function hashPassword(password: string): string {
 const setupSchema = z.object({
   name: z.string().trim().min(1).max(100),
   email: z.string().email(),
-  password: z.string().min(6).max(128),
+  password: z.string().min(6).max(128)
+    .refine((value) => value !== LEGACY_DEFAULT_EMPLOYEE_PASSWORD, { message: '這組密碼不能使用' }),
   industry: z.enum(['restaurant', 'retail', 'medical', 'service', 'cafe', 'gym', 'education', 'petshop', 'repair', 'beauty']),
 });
 
@@ -150,20 +147,7 @@ export async function POST(request: NextRequest) {
       redirect: '/pos',
     }, { status: 201 });
 
-    // Signed session cookie (httpOnly). client_tenant_id / tenant_name are display-only hints.
-    response.cookies.set(TENANT_SESSION_COOKIE, sessionToken, sessionCookieOptions(TENANT_SESSION_MAX_AGE_SECONDS));
-    response.cookies.set(CLIENT_TENANT_ID_COOKIE, tenantId, {
-      path: '/',
-      maxAge: TENANT_SESSION_MAX_AGE_SECONDS,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-    });
-    response.cookies.set('tenant_name', encodeURIComponent(name), {
-      path: '/',
-      maxAge: TENANT_SESSION_MAX_AGE_SECONDS,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-    });
+    setTenantSessionCookies(response, { sessionToken, tenantId, tenantName: name });
 
     return response;
   } catch (error) {

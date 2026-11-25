@@ -175,7 +175,7 @@ export default function SettingsPage() {
     try {
       const res = await fetch('/api/auth/logout', { method: 'POST' });
       if (!res.ok) throw new Error('登出失敗');
-      window.location.href = '/onboarding';
+      window.location.href = '/login';
     } catch {
       toast({ title: '登出失敗', description: '請稍後再試', variant: 'destructive' });
     }
