@@ -58,6 +58,11 @@ describe('authenticateTenantUser', () => {
   it('refuses accounts still on the legacy default employee password', async () => {
     const result = await authenticateTenantUser(database, 'cashier-b@test.com', LEGACY_DEFAULT_EMPLOYEE_PASSWORD);
     expect(result).toEqual({ ok: false, reason: 'password_not_set' });
+    // bcryptjs handles NUL so that "default\0default" also matches the default's hash; it must still be refused.
+    const padded = await authenticateTenantUser(
+      database, 'cashier-b@test.com', `${LEGACY_DEFAULT_EMPLOYEE_PASSWORD}\0${LEGACY_DEFAULT_EMPLOYEE_PASSWORD}`
+    );
+    expect(padded).toEqual({ ok: false, reason: 'password_not_set' });
   });
 
   it('refuses non-owner roles until API routes check roles', async () => {

@@ -9,6 +9,11 @@ import * as schema from '@/db/schema';
  */
 export const LEGACY_DEFAULT_EMPLOYEE_PASSWORD = 'changeme123';
 
+/** bcrypt ignores everything after a NUL byte, so passwords containing one are refused outright. */
+export function containsNulCharacter(value: string): boolean {
+  return value.includes('\0');
+}
+
 // Compared against when the email is unknown so both paths cost one bcrypt check.
 const DUMMY_PASSWORD_HASH = bcrypt.hashSync('dummy-password-for-timing', 10);
 
@@ -46,7 +51,9 @@ export async function authenticateTenantUser(
   if (!user || !passwordMatches) {
     return { ok: false, reason: 'invalid_credentials' };
   }
-  if (password === LEGACY_DEFAULT_EMPLOYEE_PASSWORD) {
+  // Check the stored hash, not the typed text: bcrypt stops at a NUL byte, so
+  // "changeme123\0anything" also matches a hash of the default.
+  if (await bcrypt.compare(LEGACY_DEFAULT_EMPLOYEE_PASSWORD, user.passwordHash)) {
     return { ok: false, reason: 'password_not_set' };
   }
   if (!ROLES_ALLOWED_TO_LOGIN.has(user.role)) {

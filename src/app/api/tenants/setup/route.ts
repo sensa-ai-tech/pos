@@ -16,7 +16,7 @@ import { repairTemplate } from '@/db/templates/repair';
 import { beautyTemplate } from '@/db/templates/beauty';
 import { TENANT_SESSION_MAX_AGE_SECONDS, signSession } from '@/lib/session';
 import { setTenantSessionCookies } from '@/lib/tenant-session-cookies';
-import { LEGACY_DEFAULT_EMPLOYEE_PASSWORD } from '@/lib/tenant-login';
+import { LEGACY_DEFAULT_EMPLOYEE_PASSWORD, containsNulCharacter } from '@/lib/tenant-login';
 
 function hashPassword(password: string): string {
   const salt = bcrypt.genSaltSync(10);
@@ -27,6 +27,7 @@ const setupSchema = z.object({
   name: z.string().trim().min(1).max(100),
   email: z.string().email(),
   password: z.string().min(6).max(128)
+    .refine((value) => !containsNulCharacter(value), { message: '密碼含有不允許的字元' })
     .refine((value) => value !== LEGACY_DEFAULT_EMPLOYEE_PASSWORD, { message: '這組密碼不能使用' }),
   industry: z.enum(['restaurant', 'retail', 'medical', 'service', 'cafe', 'gym', 'education', 'petshop', 'repair', 'beauty']),
 });

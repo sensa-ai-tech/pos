@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/db';
 import { SessionSecretError, TENANT_SESSION_MAX_AGE_SECONDS, signSession } from '@/lib/session';
-import { authenticateTenantUser } from '@/lib/tenant-login';
+import { authenticateTenantUser, containsNulCharacter } from '@/lib/tenant-login';
 import { setTenantSessionCookies } from '@/lib/tenant-session-cookies';
 
 const loginSchema = z.object({
   // Same email rule as /api/tenants/setup, so every account that can sign up can sign in.
   email: z.string().email(),
-  password: z.string().min(1).max(128),
+  password: z.string().min(1).max(128).refine((value) => !containsNulCharacter(value)),
 });
 
 export async function POST(request: NextRequest) {
