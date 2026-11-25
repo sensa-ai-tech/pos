@@ -8,21 +8,26 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-/** Only same-origin paths are accepted as the post-login destination, checked after URL normalization. */
-function safeNextPath(value: string | null): string {
-  if (!value || !value.startsWith('/')) return '/pos';
+/**
+ * Post-login destination as an absolute same-origin URL. Returning the full href (not the
+ * normalized path) matters: "/.//evil.example" normalizes to the path "//evil.example",
+ * which a browser would treat as another host.
+ */
+function safeNextUrl(value: string | null): string {
+  const fallback = new URL('/pos', window.location.origin).href;
+  if (!value || !value.startsWith('/')) return fallback;
   try {
     const url = new URL(value, window.location.origin);
-    if (url.origin !== window.location.origin || url.pathname === '/login') return '/pos';
-    return `${url.pathname}${url.search}${url.hash}`;
+    if (url.origin !== window.location.origin || url.pathname === '/login') return fallback;
+    return url.href;
   } catch {
-    return '/pos';
+    return fallback;
   }
 }
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  const nextPath = safeNextPath(searchParams.get('next'));
+  const nextParam = searchParams.get('next');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +58,7 @@ function LoginForm() {
         return;
       }
       // Full navigation so server components read the new session cookie.
-      window.location.href = nextPath;
+      window.location.href = safeNextUrl(nextParam);
     } catch {
       setError('連線失敗，請確認網路後再試');
       setSubmitting(false);
